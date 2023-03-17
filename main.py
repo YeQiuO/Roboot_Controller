@@ -28,8 +28,10 @@ if __name__ == '__main__':
 
                     for j in range(4):
                         CheckCrush.CheckCrush(i, _data.robot[i].towards, _data.robot[i].x,
-                                              _data.robot[i].y, j, _data.robot[j].towards, _data.robot[j].x,
-                                              _data.robot[j].y)
+                                              _data.robot[i].y, _data.robot[i].line_speed_x,
+                                              _data.robot[i].line_speed_y, j, _data.robot[j].towards, _data.robot[j].x,
+                                              _data.robot[j].y, _data.robot[j].line_speed_x,
+                                              _data.robot[j].line_speed_y)
                 else:
                     Physics.doInstruct(i, _data.robot[i].node_id, -1, _data.robot[i].towards, _data.robot[i].x,
                                        _data.robot[i].y,
@@ -37,16 +39,20 @@ if __name__ == '__main__':
 
                     for j in range(4):
                         CheckCrush.CheckCrush(i, _data.robot[i].towards, _data.robot[i].x,
-                                              _data.robot[i].y, j, _data.robot[j].towards, _data.robot[j].x,
-                                              _data.robot[j].y)
+                                              _data.robot[i].y, _data.robot[i].line_speed_x,
+                                              _data.robot[i].line_speed_y, j, _data.robot[j].towards, _data.robot[j].x,
+                                              _data.robot[j].y, _data.robot[j].line_speed_x,
+                                              _data.robot[j].line_speed_y)
             else:
                 Physics.doInstruct(i, -1, -1, _data.robot[i].towards, _data.robot[i].x, _data.robot[i].y,
                                    -1, _data.robot[i].x, _data.robot[i].y, -1, _data.frame, -1)
 
                 for j in range(4):
                     CheckCrush.CheckCrush(i, _data.robot[i].towards, _data.robot[i].x,
-                                          _data.robot[i].y, j, _data.robot[j].towards, _data.robot[j].x,
-                                          _data.robot[j].y)
+                                          _data.robot[i].y, _data.robot[i].line_speed_x,
+                                          _data.robot[i].line_speed_y, j, _data.robot[j].towards, _data.robot[j].x,
+                                          _data.robot[j].y, _data.robot[j].line_speed_x,
+                                          _data.robot[j].line_speed_y)
 
 
         # 发出指令
