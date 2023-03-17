@@ -25,7 +25,7 @@ if __name__ == '__main__':
                 if task.state == 0:
                     physics.doInstruct(i, _data.robot[i].node_id, -1, _data.robot[i].towards, _data.robot[i].x,
                                        _data.robot[i].y,
-                                       task.start.id, task.start.x, task.start.y, task.state, _data.frame, task.end.type)
+                                       task.start.id, task.start.x, task.start.y, task.state, _data.frame, task.start.type)
 
                     for j in range(4):
                         CheckCrush.CheckCrush(i, _data.robot[i].towards, _data.robot[i].x,
@@ -36,7 +36,7 @@ if __name__ == '__main__':
                 else:
                     physics.doInstruct(i, _data.robot[i].node_id, -1, _data.robot[i].towards, _data.robot[i].x,
                                        _data.robot[i].y,
-                                       task.end.id, task.end.x, task.end.y, task.state, _data.frame, task.end.type)
+                                       task.end.id, task.end.x, task.end.y, task.state, _data.frame, task.start.type)
 
                     for j in range(4):
                         CheckCrush.CheckCrush(i, _data.robot[i].towards, _data.robot[i].x,

@@ -4,7 +4,7 @@ import Data
 
 
 class Schedule:
-    size = 2
+    size = 3
 
     # 双端队列
     def __init__(self):
@@ -25,7 +25,6 @@ class Schedule:
             start = self.list[i].start
             distance.append([np.abs(start_x - start.x) + np.abs(start_y - start.y), i])
         temp = sorted(distance, key=lambda x: x[0])
-        Data.log_print("distance"+str(self.list[temp[0][1]].start.type))
+        # Data.log_print("distance"+str(self.list[temp[0][1]].start.type))
 
         return self.list.pop(temp[0][1])
-        # return self.list.pop(0)

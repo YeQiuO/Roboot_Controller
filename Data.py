@@ -31,7 +31,10 @@ def log_print(log):
 
 class Data:
     corresponding_material = [[], [], [], [], [2, 1], [3, 1], [3, 2]]
-    in_advance = [0, 0, 0, 0, 50, 50, 50, 200, 0, 0]
+    in_advance = [0, 0, 0, 0, 50, 50, 50, 150, 0, 0]
+
+    count_456 = 8
+    distance_123 = 5
 
     def __init__(self):
         self.node_type = [[], [], [], [], [], [], [], [], [], []]
@@ -331,13 +334,13 @@ class Data:
                 for j in self.node_type[i]:
                     temp.append([self.node_distance[key_node.id][j.id], j])
             temp = sorted(temp, key=lambda x: x[0])
-            length = int(len(temp) / 2) + 1 if int(len(temp) / 2) + 1 >= 8 else len(temp)
+            length = int(len(temp) / 2) + 1 if int(len(temp) / 2) + 1 >= Data.count_456 else len(temp)
             sons = []
             for i in temp[:length]:
                 sons.append(i[1])
             for i in [1, 2, 3]:
                 for j in self.node_type[i]:
-                    if self.node_distance[key_node.id][j.id] < 5:
+                    if self.node_distance[key_node.id][j.id] < Data.distance_123:
                         sons.append(j)
 
             tree = Tree(key_node, 1)
