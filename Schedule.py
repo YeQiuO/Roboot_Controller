@@ -4,7 +4,7 @@ import Data
 
 
 class Schedule:
-    size = 4
+    size = 2
 
     # 双端队列
     def __init__(self):

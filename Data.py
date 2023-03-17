@@ -170,13 +170,15 @@ class Data:
         for node in self.tree.node:
             if len(self.tree.super_sons) > 0:
                 for super_son in self.tree.super_sons:
-                    if in_produce == 0 and node[0].remain_time == -1:
+                    if in_produce == 0 and node[0].remain_time == -1 and node[0].product_state == 0:
+                        # 未生产的工作台优先
                         self.try_consume_left(super_son, node[0])
                     elif in_produce == 1 and node[0].remain_time != -1:
                         self.try_consume_left(super_son, node[0])
             if len(self.tree.sons) > 0:
                 for son in self.tree.sons:
                     if in_produce == 0 and node[0].remain_time == -1:
+                        # 未生产的工作台优先
                         self.try_consume_left(son, node[0])
                     elif in_produce == 1 and node[0].remain_time != -1:
                         self.try_consume_left(son, node[0])
