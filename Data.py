@@ -29,6 +29,14 @@ def log_print(log):
     # mylog.close()
 
 
+def calDistance(x1, y1, x2, y2):
+    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** (0.5)
+
+
+def loaner():
+    return Task(Node(-2, -2, 0, 0, -2, -2, -2), Node(-2, -2, 0, 0, -2, -2, -2))
+
+
 class Data:
     corresponding_material = [[], [], [], [], [2, 1], [3, 1], [3, 2]]
     in_advance = [0, 0, 0, 0, 50, 50, 50, 150, 0, 0]
@@ -49,6 +57,8 @@ class Data:
         self.tree = None
 
         self.node_distance = None  # 父节点距离|x1-x2|+|y1-y2|排序
+
+        self.stop_count = [0, 0, 0, 0]
 
     def load(self):
         # x = 0
@@ -164,11 +174,42 @@ class Data:
         if self.current_works.wait != 0 and len(self.schedule.list) > 0:
             for i in range(len(self.current_works.list)):
                 if self.current_works.list[i] is None and len(self.schedule.list) > 0:
-                    self.current_works.list[i] = self.schedule.get_task(self.robot[i].x, self.robot[i].y)
+                    task = self.schedule.get_task(self.robot[i].x, self.robot[i].y)
+
+                    # 到达结束边缘临界
+                    if self.frame > 8000 and not self.canFinish(task, self.robot[i].x, self.robot[i].y):
+                        # 如果还有多余任务
+                        self.product_456()
+                        if len(self.schedule.list) > 0:
+                            task = self.schedule.get_task(self.robot[i].x, self.robot[i].y)
+                            if self.canFinish(task, self.robot[i].x, self.robot[i].y):
+                                self.stop_count[self.robot[i].id] = 0
+                            else:
+                                task = None
+                            self.stop_count[self.robot[i].id] += 1
+                        else:
+                            task = None
+                        if self.stop_count[self.robot[i].id] == 3:
+                            task = loaner()
+
+                    self.current_works.list[i] = task
                     self.current_works.wait -= 1
 
         while input() != "OK":
             pass
+
+    # 判断任务是否可以在结束前完成
+    def canFinish(self, task, robot_x, robot_y):
+        distance_b2s = calDistance(task.start.x, task.start.y, task.end.x, task.end.y)  # 买点和卖点的距离
+        distance_r2b = calDistance(task.start.x, task.start.y, robot_x, robot_y)  # 机器人和买点的距离
+        leave_time = (9000 - self.frame) / 50  # 计算剩余时间(秒)
+        redundance = 2  # 冗余时间,增加容错
+        avg_time = 4.5  # 平均行驶速度
+        distance = distance_b2s + distance_r2b
+        if (distance / avg_time + redundance) < leave_time:
+            return True
+        else:
+            return False
 
     def priority_schedule(self, in_produce):
         for node in self.tree.node:
@@ -190,8 +231,8 @@ class Data:
 
     def product_456(self):
         count = 0
-        need_count = Schedule.size - len(self.schedule.list)
-        if len(self.schedule.list) <= Schedule.size and count <= need_count:
+        need_count = self.schedule.size - len(self.schedule.list)
+        if len(self.schedule.list) <= self.schedule.size and count <= need_count:
             count += 1
             # 先调度super的节点
             if self.tree.super_sons is not None:
@@ -253,7 +294,7 @@ class Data:
     # 456有空位时，消费最近的123
     def find_task(self, end, type):
 
-        if len(self.schedule.list) >= Schedule.size:
+        if len(self.schedule.list) >= self.schedule.size:
             return
 
         # log_print("find_task"+str(end.type))
@@ -261,14 +302,24 @@ class Data:
         for i in self.node_type[type]:
             temp.append([self.node_distance[i.id, end.id], i])
         temp = sorted(temp, key=lambda x: x[0])
+        choice = temp[0][1]
 
-        # 找最近的产品（123生产速度快，暂时不考虑供不应求）PS:如果所有节点都在生产中，会出错
+        # 找最近的产品（123生产速度快，不考虑到达后未生产出产品的情况）PS:下面的方法，如果所有节点都在生产中，会出错
         # for i in temp:
         #     log_print(i)
         #     if i[1].product_state == 1:
         #         self.consume(i[1], end, False)
 
-        self.consume(temp[0][1], end, False)
+        # 如果该起点正被其他机器人选定，则换一个类似距离的节点
+        # if len(temp) >= 2:
+        #     start_ids = []
+        #     for work in self.current_works.list:
+        #         if work is not None:
+        #             start_ids.append(work.start.id)
+        #     if choice.id in start_ids and (self.node_distance[choice.id][end.id] - self.node_distance[temp[1][1].id][end.id]) < 10:
+        #         choice = temp[1][1]
+
+        self.consume(choice, end, False)
 
     def find_tree(self):
         temp = []

@@ -13,11 +13,10 @@ class Physics:
 
     # 生成机器下一步行动的指令
     def doInstruct(self, robot_id, plat_id, speed, direction, robot_x, robot_y, target_id, target_x, target_y,
-                   task_type,
-                   frame, task_start_type):
+                   task_type, frame, task_start_type):
 
-        if plat_id == target_id:  # 机器人所处位置 == 目标位置
-            if task_type == 0 and not (frame > 8500 and task_start_type == 7):
+        if plat_id == target_id:  # 机器人所处位置 == 目标位置  and not (frame > 8500 and task_start_type == 7) and not frame > 8800
+            if task_type == 0:
                 sys.stdout.write('buy %d\n' % robot_id)
             if task_type == 1:
                 sys.stdout.write('sell %d\n' % robot_id)
@@ -66,17 +65,3 @@ def CalculateAngle(direction, target_x, target_y):
     if angle < -math.pi:
         angle += 2 * math.pi
     return angle
-
-
-# 判断任务是否可以在结束前完成
-# def canFinish(robot_id,buy_id,sell_id):
-#     distance_b2s = distance_graph[buy_id][sell_id]# 买点和卖点的距离
-#     distance_r2b = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[buy_id][1], worker_infos[buy_id][2])# 机器人和买点的距离
-#     leave_time = (9000 - time)/50 # 计算剩余时间(秒)
-#     redundance = 2# 冗余时间,增加容错
-#     avg_time = 4.5# 平均行驶速度
-#     distance = distance_b2s +distance_r2b
-#     if (distance/avg_time + redundance) < leave_time:
-#         return True
-#     else:
-#         return False
