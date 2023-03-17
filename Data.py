@@ -31,6 +31,7 @@ def log_print(log):
 
 class Data:
     corresponding_material = [[], [], [], [], [2, 1], [3, 1], [3, 2]]
+    in_advance = [0, 0, 0, 0, 50, 50, 50, 200, 0, 0]
 
     def __init__(self):
         self.node_type = [[], [], [], [], [], [], [], [], [], []]
@@ -153,7 +154,7 @@ class Data:
                 if self.try_consume_left(i, self.tree.node):
                     break
 
-        # 调度：队空，456消费 入队列
+        # 次级调度：队空，456消费 入队列
         self.product_456()
 
         # 存在机器人未安排工作 且 队列不为空
@@ -170,7 +171,7 @@ class Data:
         for node in self.tree.node:
             if len(self.tree.super_sons) > 0:
                 for super_son in self.tree.super_sons:
-                    if in_produce == 0 and node[0].remain_time == -1 and node[0].product_state == 0:
+                    if in_produce == 0 and node[0].remain_time == -1:
                         # 未生产的工作台优先
                         self.try_consume_left(super_son, node[0])
                     elif in_produce == 1 and node[0].remain_time != -1:
@@ -233,7 +234,8 @@ class Data:
         self.schedule.already_schedule_end_node_ids[start.type].append(end.id)
 
     def try_consume_left(self, start, end):
-        if start.product_state == 1 and self.have_location_to_put(end, start.type) \
+        if (start.product_state == 1 or (0 < start.remain_time < Data.in_advance[start.type])) \
+                and self.have_location_to_put(end, start.type) \
                 and self.schedule.already_schedule_start_node_ids.count(start.id) == 0:
             self.consume(start, end, True)
             return True

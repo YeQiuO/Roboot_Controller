@@ -5,7 +5,7 @@ import Data
 
 
 class Physics:
-    stop_distance = 1.2
+    stop_distance = 2
 
     def __init__(self):
         self.is_close = [-1, -1, -1, -1]  # 1为已接近；-1为未接近
