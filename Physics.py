@@ -5,7 +5,6 @@ import Data
 
 
 class Physics:
-    # stop_distance = 1.2
 
     def __init__(self):
         self.is_close = [-1, -1, -1, -1]  # 1为已接近；-1为未接近
@@ -15,7 +14,7 @@ class Physics:
     def doInstruct(self, robot_id, plat_id, speed, direction, robot_x, robot_y, target_id, target_x, target_y,
                    task_type, frame, task_start_type):
 
-        if plat_id == target_id:  # 机器人所处位置 == 目标位置  and not (frame > 8500 and task_start_type == 7) and not frame > 8800
+        if plat_id == target_id:  # 机器人所处位置 == 目标位置
             if task_type == 0:
                 sys.stdout.write('buy %d\n' % robot_id)
             if task_type == 1:
@@ -45,11 +44,10 @@ class Physics:
         # 速度定义
         angle_towards_destination = abs(angle) * 180 / math.pi
         if self.is_close[robot_id] == 1 and angle_towards_destination > 80:  # 开始绕圈
-            line_speed = 0
+            line_speed = 0.5
         elif distance < 1.2:  # 到达目的地
             line_speed = 1.5 + distance / 1.2 * 0.5
-        elif angle_towards_destination > 60:  # 角度过大
-            # line_speed = 6 * ((180 - angle_towards_destination) / 120) ** 2
+        elif angle_towards_destination > 60:  # 角度过大（0~6）
             line_speed = - (1/20) * angle_towards_destination + 9
         else:  # 对准了就冲吧
             line_speed = 6

@@ -214,29 +214,30 @@ class Data:
         else:
             return False
 
+    # in_produce：0，优先空闲的7
     def priority_schedule(self, in_produce):
         for node in self.tree.node:
             if len(self.tree.super_sons) > 0:
                 for super_son in self.tree.super_sons:
+                    # 未生产的工作台优先寻找产品
                     if in_produce == 0 and node[0].remain_time == -1:
-                        # 未生产的工作台优先
                         self.try_consume_left(super_son, node[0])
-                    elif in_produce == 1 and node[0].remain_time != -1:
+                    # 然后考虑正在生产的工作台
+                    elif in_produce == 1 and node[0].remain_time > 0:
                         self.try_consume_left(super_son, node[0])
             if len(self.tree.sons) > 0:
                 for son in self.tree.sons:
+                    # 未生产的工作台优先寻找产品
                     if in_produce == 0 and node[0].remain_time == -1:
-                        # 未生产的工作台优先
                         self.try_consume_left(son, node[0])
-                    elif in_produce == 1 and node[0].remain_time != -1:
+                    # 然后考虑正在生产的工作台
+                    elif in_produce == 1 and node[0].remain_time > 0:
                         self.try_consume_left(son, node[0])
             self.try_consume_left(node[0], node[1])
 
     def product_456(self):
-        count = 0
-        need_count = self.schedule.size - len(self.schedule.list)
-        if len(self.schedule.list) <= self.schedule.size and count <= need_count:
-            count += 1
+        # need_count = self.schedule.size - len(self.schedule.list)
+        if len(self.schedule.list) <= self.schedule.size:
             # 先调度super的节点
             if self.tree.super_sons is not None:
                 for super_son in self.tree.super_sons:
@@ -261,7 +262,8 @@ class Data:
         if self.schedule.already_schedule_end_node_ids[type].count(end.id) > 0:
             log_print('已经被预约，位置：' + str(type))
             return False
-        # log_print('正在判断是否有位置：' + str(type))
+
+        # 判断是否有空位
         state = end.material_state
         for i in range(type):
             state /= 2
