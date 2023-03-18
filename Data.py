@@ -39,10 +39,11 @@ def loaner():
 
 class Data:
     corresponding_material = [[], [], [], [], [2, 1], [3, 1], [3, 2]]
-    in_advance = [0, 0, 0, 0, 50, 50, 50, 150, 0, 0]
+
+    fill_in = [0, 0, 0, 0, 6, 10, 12, 112, 0, 0]
 
     count_456 = 8
-    distance_123 = 5
+    distance_123 = 8
 
     def __init__(self):
         self.node_type = [[], [], [], [], [], [], [], [], [], []]
@@ -59,6 +60,9 @@ class Data:
         self.node_distance = None  # 父节点距离|x1-x2|+|y1-y2|排序
 
         self.stop_count = [0, 0, 0, 0]
+
+        self.in_advance_to_get = [0, 0, 0, 0, 0, 0, 0, 200, 0, 0]
+        self.in_advance_to_put = [0, 0, 0, 0, 50, 50, 50, 200, 0, 0]
 
     def load(self):
         # x = 0
@@ -111,8 +115,7 @@ class Data:
             self.node_distance = np.zeros((self.node_count, self.node_count))
             for i in range(self.node_count):
                 for j in range(self.node_count):
-                    self.node_distance[i][j] = np.abs(self.node_ids[i].x - self.node_ids[j].x) + np.abs(
-                        self.node_ids[i].y - self.node_ids[j].y)
+                    self.node_distance[i][j] = calDistance(self.node_ids[i].x, self.node_ids[i].y, self.node_ids[j].x, self.node_ids[j].y)
             # 找到最优树结构
             self.tree = self.find_tree()
         else:
@@ -263,7 +266,12 @@ class Data:
         for i in range(type):
             state /= 2
         state = math.floor(state)
-        return state % 2 == 0
+
+        mua = False
+        if end.material_state == Data.fill_in[end.type] and 0 < end.remain_time < self.in_advance_to_put[end.type]:
+            mua = True
+
+        return state % 2 == 0 or mua
 
     def consume(self, start, end, isleft):
         if isleft:
@@ -278,7 +286,7 @@ class Data:
         self.schedule.already_schedule_end_node_ids[start.type].append(end.id)
 
     def try_consume_left(self, start, end):
-        if (start.product_state == 1 or (0 < start.remain_time < Data.in_advance[start.type])) \
+        if (start.product_state == 1 or (0 < start.remain_time < self.in_advance_to_get[start.type])) \
                 and self.have_location_to_put(end, start.type) \
                 and self.schedule.already_schedule_start_node_ids.count(start.id) == 0:
             self.consume(start, end, True)
@@ -323,6 +331,7 @@ class Data:
 
     def find_tree(self):
         temp = []
+        distance = 0
         if len(self.node_type[7]) != 0:
             for i in self.node_type[7]:
                 for j in self.node_type[8]:
@@ -349,9 +358,15 @@ class Data:
                     if len(node) == 1:
                         if len(temp) >= 2:
                             sons_2.append(temp[1][1])
+                            distance += self.node_distance[temp[1][1].id][key_node[0].id]
                         else:
                             sons.pop(len(sons) - 1)
                             super_sons.append(temp[0][1])
+                    distance += self.node_distance[temp[0][1].id][key_node[0].id]
+
+            distance = distance / (len(sons) + len(super_sons))
+            self.in_advance_to_put[7] = (distance/4.5)*50-200
+
             # count(7)=2, 更新sons，去重
             if len(node) == 2:
                 temp = []
@@ -363,6 +378,11 @@ class Data:
                         if son not in super_sons:
                             super_sons.append(son)
                 sons = temp
+                #
+                # for son in sons:
+                #     distance += self.node_distance(son.id)
+                # for son in super_sons:
+                #     distance += self.node_distance(son.id)
             else:
                 sons.extend(sons_2)
 
