@@ -30,7 +30,7 @@ def log_print(log):
 
 
 def calDistance(x1, y1, x2, y2):
-    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** (0.5)
+    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
 
 def loaner():
@@ -44,6 +44,8 @@ class Data:
 
     count_456 = 8
     distance_123 = 8
+
+    average_position = [[0, 0], [0, 0], [0, 0], [0, 0]]
 
     def __init__(self):
         self.node_type = [[], [], [], [], [], [], [], [], [], []]
@@ -118,6 +120,11 @@ class Data:
                     self.node_distance[i][j] = calDistance(self.node_ids[i].x, self.node_ids[i].y, self.node_ids[j].x, self.node_ids[j].y)
             # 找到最优树结构
             self.tree = self.find_tree()
+
+            for index in range(4):
+                self.average_position[index][0] = self.robot[index].x
+                self.average_position[index][1] = self.robot[index].y
+
         else:
             # 更新 key_node
             if self.tree.pattern == 0:
@@ -137,13 +144,30 @@ class Data:
                     id = self.tree.sons[i].id
                     self.tree.sons[i] = self.node_ids[id]
 
-        # 更新 拿到商品、任务完成
+        # 更新平均位置
+        if self.frame % 50 == 0:
+            for index in range(len(self.robot)):
+                self.average_position[index][0] *= 0.8
+                self.average_position[index][0] += self.robot[index].x * 0.2
+                self.average_position[index][1] *= 0.8
+                self.average_position[index][1] += self.robot[index].y * 0.2
+
+        # 更新
         for robot in self.robot:
             if self.current_works.list[robot.id] is not None:
+
+                # 更新距离
+                if self.current_works.list[robot.id].state == 0:
+                    self.current_works.remain_distance[robot.id] = calDistance(robot.x, robot.y, self.current_works.list[robot.id].start.x, self.current_works.list[robot.id].start.y)
+                else:
+                    self.current_works.remain_distance[robot.id] = calDistance(robot.x, robot.y, self.current_works.list[robot.id].end.x, self.current_works.list[robot.id].end.y)
+
+                # 更新拿到商品
                 if self.current_works.list[robot.id].state == 0 and robot.thing_type != 0:
                     log_print(str(robot.id) + '拿到商品' + str(self.current_works.list[robot.id].start.type))
                     self.current_works.list[robot.id].state = 1
 
+                # 更新任务完成
                 elif self.current_works.list[robot.id].state == 1 and robot.thing_type == 0:
                     start = self.current_works.list[robot.id].start
                     # 结束预约
@@ -260,7 +284,7 @@ class Data:
     def have_location_to_put(self, end, type):
 
         if self.schedule.already_schedule_end_node_ids[type].count(end.id) > 0:
-            log_print('已经被预约，位置：' + str(type))
+            # log_print('已经被预约，位置：' + str(type))
             return False
 
         # 判断是否有空位
@@ -307,10 +331,19 @@ class Data:
         if len(self.schedule.list) >= self.schedule.size:
             return
 
-        # log_print("find_task"+str(end.type))
+        # 计算平均位置
+        average_x = 0
+        average_y = 0
+        for i in self.average_position:
+            average_x += i[0]
+            average_y += i[1]
+        average_x /= 4
+        average_y /= 4
+
+        # 计算start节点和平均位置的距离+start和end节点的距离排序
         temp = []
         for i in self.node_type[type]:
-            temp.append([self.node_distance[i.id, end.id], i])
+            temp.append([self.node_distance[i.id, end.id] + calDistance(i.x, i.y, average_x, average_y), i])
         temp = sorted(temp, key=lambda x: x[0])
         choice = temp[0][1]
 
@@ -326,7 +359,7 @@ class Data:
         #     for work in self.current_works.list:
         #         if work is not None:
         #             start_ids.append(work.start.id)
-        #     if choice.id in start_ids and (self.node_distance[choice.id][end.id] - self.node_distance[temp[1][1].id][end.id]) < 10:
+        #     if choice.id in start_ids and (self.node_distance[choice.id][end.id] - self.node_distance[temp[1][1].id][end.id]) < 3:
         #         choice = temp[1][1]
 
         self.consume(choice, end, False)

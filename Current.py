@@ -3,6 +3,7 @@ class Current:
     def __init__(self):
         self.list = [None, None, None, None]
         self.wait = 4
+        self.remain_distance = [9999, 9999, 9999, 9999]
 
 
 if __name__ == '__main__':

@@ -12,7 +12,8 @@ def CheckCrush(robot1_id, robot1_direction, robot1_x, robot1_y, robot1_Vx, robot
         return
 
     # 从1到2的连线向量和1号机器人之间的夹角（负逆时针，正顺时针）
-    angle = Physics.CalculateAngle(robot1_direction, robot2_x - robot1_x, robot2_y - robot1_y)
+    # line_angle = Physics.CalculateAngle(robot1_direction, robot2_x - robot1_x, robot2_y - robot1_y)
+    # unline_angle = line_angle + math.pi if line_angle < 0 else line_angle - math.pi
     # line_angle = math.atan2(robot2_y - robot1_y, robot2_x - robot1_x)  # 以机器人1号坐标为起点到机器人二号坐标的向量，以弧度表示
     # angle = line_angle - robot1_direction  # 连线向量和1号机器人运行方向之间的夹角
     # if angle > math.pi:
