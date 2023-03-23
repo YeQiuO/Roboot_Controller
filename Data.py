@@ -30,6 +30,10 @@ def log_print(log):
 
 
 def calDistance(x1, y1, x2, y2):
+    return abs(x2 - x1) + abs(y2 - y1)
+
+
+def calDistance_precise(x1, y1, x2, y2):
     return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
 
@@ -50,7 +54,7 @@ class Data:
 
     fill_in = [0, 0, 0, 0, 6, 10, 12, 112, 0, 0]
 
-    count_456 = 8
+    count_456 = 7
     distance_123 = 8
 
     average_position = [[0, 0], [0, 0], [0, 0], [0, 0]]
@@ -71,7 +75,7 @@ class Data:
 
         self.stop_count = [0, 0, 0, 0]
 
-        self.in_advance_to_get = [0, 0, 0, 0, 25, 25, 25, 150, 0, 0]
+        self.in_advance_to_get = [0, 0, 0, 0, 75, 75, 75, 150, 0, 0]
         self.in_advance_to_put = [0, 0, 0, 0, 50, 50, 50, 200, 0, 0]
 
     def load(self):
@@ -119,17 +123,14 @@ class Data:
                          float(robot[5]), float(robot[6]), float(robot[7]), float(robot[8]), float(robot[9]))
             self.robot.append(temp)
 
-        if self.frame == 8000:
-            self.schedule.size = 10
-
         # 初始化、更新树
         if self.frame == 1:
             # 计算距离矩阵
             self.node_distance = np.zeros((self.node_count, self.node_count))
             for i in range(self.node_count):
                 for j in range(self.node_count):
-                    self.node_distance[i][j] = calDistance(self.node_ids[i].x, self.node_ids[i].y, self.node_ids[j].x,
-                                                           self.node_ids[j].y)
+                    self.node_distance[i][j] = calDistance(self.node_ids[i].x, self.node_ids[i].y, self.node_ids[j].x, self.node_ids[j].y)
+            self.schedule.node_distance = self.node_distance
             # 找到最优树结构
             self.tree = self.find_tree()
 
@@ -140,21 +141,33 @@ class Data:
         else:
             # 更新 key_node
             if self.tree.pattern == 0:
+                # 调整 sons 顺序
+                vacancy_count_4 = 0
+                vacancy_count_5 = 0
+                vacancy_count_6 = 0
                 for i in range(len(self.tree.node)):
-                    for j in range(len(self.tree.node[i])):
-                        self.tree.node[i][j] = self.node_ids[self.tree.node[i][j].id]
+                    self.tree.node[i][0] = self.node_ids[self.tree.node[i][0].id]  # 7
+                    self.tree.node[i][1] = self.node_ids[self.tree.node[i][1].id]  # 8/9
+                    material_state = self.tree.node[i][0].material_state
+                    if have_space(material_state, 4):
+                        vacancy_count_4 += 1
+                    if have_space(material_state, 5):
+                        vacancy_count_5 += 1
+                    if have_space(material_state, 6):
+                        vacancy_count_6 += 1
+                temp = [[vacancy_count_4, 4], [vacancy_count_5, 5], [vacancy_count_6, 6]]
+                temp = sorted(temp, key=lambda x: x[0])
+                temp = [x[1] for x in temp]
+                self.change_order(temp)
             else:
-                self.tree.node = self.node_ids[self.tree.node.id]
+                self.tree.node = self.node_ids[self.tree.node.id]  # 9
 
             # 更新 sons_node
-            if self.tree.super_sons is not None:
-                for i in range(len(self.tree.super_sons)):
-                    id = self.tree.super_sons[i].id
-                    self.tree.super_sons[i] = self.node_ids[id]
-            if self.tree.sons is not None:
-                for i in range(len(self.tree.sons)):
-                    id = self.tree.sons[i].id
-                    self.tree.sons[i] = self.node_ids[id]
+            for sons in [self.tree.super_sons, self.tree.sons, self.tree.grand_son]:
+                for i in range(len(sons)):
+                    id = sons[i].id
+                    sons[i] = self.node_ids[id]
+
 
         # 更新平均位置
         if self.frame % 50 == 0:
@@ -164,21 +177,17 @@ class Data:
                 self.average_position[index][1] *= 0.8
                 self.average_position[index][1] += self.robot[index].y * 0.2
 
-        # 更新
+        # 更新机器人信息
         for robot in self.robot:
             if self.current_works.list[robot.id] is not None:
 
                 # 更新距离
                 if self.current_works.list[robot.id].state == 0:
-                    self.current_works.remain_distance[robot.id] = calDistance(robot.x, robot.y,
-                                                                               self.current_works.list[
-                                                                                   robot.id].start.x,
-                                                                               self.current_works.list[
-                                                                                   robot.id].start.y)
+                    self.current_works.remain_distance[robot.id] = \
+                        calDistance_precise(robot.x, robot.y, self.current_works.list[robot.id].start.x, self.current_works.list[robot.id].start.y)
                 else:
-                    self.current_works.remain_distance[robot.id] = calDistance(robot.x, robot.y,
-                                                                               self.current_works.list[robot.id].end.x,
-                                                                               self.current_works.list[robot.id].end.y)
+                    self.current_works.remain_distance[robot.id] = \
+                        calDistance_precise(robot.x, robot.y, self.current_works.list[robot.id].end.x, self.current_works.list[robot.id].end.y)
 
                 # 更新拿到商品
                 if self.current_works.list[robot.id].state == 0 and robot.thing_type != 0:
@@ -198,6 +207,10 @@ class Data:
                     self.current_works.wait += 1
                     self.current_works.list[robot.id] = None
 
+        # 其余约束
+        if self.frame == 8500:
+            self.in_advance_to_get[7] = 400
+
         # 优先调度
         if self.tree.pattern == 0:
 
@@ -216,9 +229,9 @@ class Data:
         self.product_456()
 
         # 存在机器人未安排工作 且 队列不为空
-        if self.current_works.wait != 0 and len(self.schedule.list) > 0:
+        if self.current_works.wait != 0:
             for i in range(len(self.current_works.list)):
-                if self.current_works.list[i] is None and len(self.schedule.list) > 0:
+                if self.current_works.list[i] is None:
                     self.current_works = self.schedule.get_task(i, self.robot, self.current_works, self.frame, self.node_type)
 
         while input() != "OK":
@@ -226,46 +239,60 @@ class Data:
 
     # in_produce：0，优先空闲的7
     def priority_schedule(self, in_produce):
+        # 给7节点排序，剩余运行时间短的在前
+        order = []
         for node in self.tree.node:
-            if len(self.tree.super_sons) > 0:
-                for super_son in self.tree.super_sons:
-                    # 未生产的工作台优先寻找产品
-                    if in_produce == 0 and node[0].remain_time == -1:
-                        self.try_consume_left(super_son, node[0])
-                    # 然后考虑正在生产的工作台
-                    elif in_produce == 1 and node[0].remain_time > 0:
-                        self.try_consume_left(super_son, node[0])
-            if len(self.tree.sons) > 0:
-                for son in self.tree.sons:
-                    # 未生产的工作台优先寻找产品
-                    if in_produce == 0 and node[0].remain_time == -1:
-                        self.try_consume_left(son, node[0])
-                    # 然后考虑正在生产的工作台
-                    elif in_produce == 1 and node[0].remain_time > 0:
-                        self.try_consume_left(son, node[0])
+            order.append([node[0].remain_time, node])
+        order = sorted(order, key=lambda x: x[0])
+        order = [x[1] for x in order]
+
+        for node in order:
+            for super_son in self.tree.super_sons:
+                # 未生产的工作台优先寻找产品
+                if in_produce == 0 and node[0].remain_time == -1:
+                    self.try_consume_left(super_son, node[0])
+                # 然后考虑正在生产的工作台
+                elif in_produce == 1 and node[0].remain_time > 0:
+                    self.try_consume_left(super_son, node[0])
+            for son in self.tree.sons:
+                # 未生产的工作台优先寻找产品
+                if in_produce == 0 and node[0].remain_time == -1:
+                    self.try_consume_left(son, node[0])
+                # 然后考虑正在生产的工作台
+                elif in_produce == 1 and node[0].remain_time > 0:
+                    self.try_consume_left(son, node[0])
             self.try_consume_left(node[0], node[1])
 
     def product_456(self):
-        # need_count = self.schedule.size - len(self.schedule.list)
-        if len(self.schedule.list) <= self.schedule.size:
-            # 先调度super的节点
-            if self.tree.super_sons is not None:
-                for super_son in self.tree.super_sons:
-                    for start_type in Data.corresponding_material[super_son.type]:
-                        if self.have_location_to_put(super_son, start_type):
-                            self.find_task(super_son, start_type)
+        if self.frame < 5:
+            for son in self.tree.grand_son:
+                for start_type in Data.corresponding_material[son.type]:
+                    if self.have_location_to_put(son, start_type):
+                        self.find_task(son, start_type)
 
-            if self.tree.sons is not None:
-                # 先调度未在生产中的节点
-                for son in self.tree.sons:
+        if len(self.schedule.priority_3) <= self.schedule.size_3:
+            # 调度未在生产中的sons节点
+            for sons in [self.tree.super_sons, self.tree.sons]:
+                for son in sons:
                     for start_type in Data.corresponding_material[son.type]:
                         if son.remain_time == -1 and self.have_location_to_put(son, start_type):
                             self.find_task(son, start_type)
-                # 再调度生产中的节点
-                for son in self.tree.sons:
+                            if len(self.schedule.priority_3) <= self.schedule.size_3:
+                                return
+            # 调度正在生产中的sons节点
+            for sons in [self.tree.super_sons, self.tree.sons]:
+                for son in sons:
                     for start_type in Data.corresponding_material[son.type]:
                         if son.remain_time >= 0 and self.have_location_to_put(son, start_type):
                             self.find_task(son, start_type)
+                            if len(self.schedule.priority_3) <= self.schedule.size_3:
+                                return
+
+            for son in self.tree.grand_son:
+                for start_type in Data.corresponding_material[son.type]:
+                    if self.have_location_to_put(son, start_type):
+                        self.find_task(son, start_type)
+
 
     def have_location_to_put(self, end, type):
 
@@ -280,15 +307,16 @@ class Data:
 
         return have_space(end.material_state, type) or mua
 
-    def consume(self, start, end, isleft):
-        if isleft:
-            self.schedule.left_insert(Task(start, end))
-        else:
-            self.schedule.right_insert(Task(start, end))
-
-        if start.type in [4, 5, 6]:
+    def consume(self, start, end):
+        if start.type in [7]:
+            self.schedule.insert_priority_1(Task(start, end))
+        elif start.type in [4, 5, 6]:
+            self.schedule.insert_priority_2(Task(start, end))
             # 预约产品格
             self.schedule.already_schedule_start_node_ids.append(start.id)
+        elif start.type in [1, 2, 3]:
+            self.schedule.insert_priority_3(Task(start, end))
+
         # 预约原材料格
         self.schedule.already_schedule_end_node_ids[start.type].append(end.id)
 
@@ -296,21 +324,32 @@ class Data:
         if (start.product_state == 1 or (0 < start.remain_time < self.in_advance_to_get[start.type])) \
                 and self.have_location_to_put(end, start.type) \
                 and self.schedule.already_schedule_start_node_ids.count(start.id) == 0:
-            self.consume(start, end, True)
+            self.consume(start, end)
             return True
         return False
 
     def try_consume_right(self, start, end):
         if start.product_state == 1 and self.have_location_to_put(end, start.type):
-            self.consume(start, end, False)
+            self.consume(start, end)
             return True
         return False
 
+    def change_order(self, order):
+        sons = []
+        super_sons = []
+        for i in order:
+            for son in self.tree.sons:
+                if son.type == i:
+                    sons.append(son)
+            for super_son in self.tree.super_sons:
+                if super_son.type == i:
+                    super_sons.append(super_son)
+        self.tree.sons = sons
+        self.tree.super_sons = super_sons
+
+
     # 456有空位时，消费最近的123
     def find_task(self, end, type):
-
-        if len(self.schedule.list) >= self.schedule.size:
-            return
 
         # 计算平均位置
         average_x = 0
@@ -343,7 +382,7 @@ class Data:
         #     if choice.id in start_ids and (self.node_distance[choice.id][end.id] - self.node_distance[temp[1][1].id][end.id]) < 3:
         #         choice = temp[1][1]
 
-        self.consume(choice, end, False)
+        self.consume(choice, end)
 
     def find_tree(self):
         temp = []
@@ -406,33 +445,55 @@ class Data:
             tree = Tree(node, 0)
             tree.update_0(super_sons, sons)
         else:
-            son = self.node_type[4]
-            son.extend(self.node_type[5])
-            son.extend(self.node_type[6])
+            sons_temp = []
+            sons_temp.extend(self.node_type[6])
+            sons_temp.extend(self.node_type[5])
+            sons_temp.extend(self.node_type[4])
             for i in self.node_type[9]:
                 sum = 0
-                for j in son:
+                for j in sons_temp:
                     sum += self.node_distance[i.id][j.id]
                 temp.append([sum, i])
             temp = sorted(temp, key=lambda x: x[0])
             key_node = temp[0][1]
 
             temp = []
-            for i in [4, 5, 6]:
-                for j in self.node_type[i]:
-                    temp.append([self.node_distance[key_node.id][j.id], j])
+            for j in sons_temp:
+                temp.append([self.node_distance[key_node.id][j.id], j])
             temp = sorted(temp, key=lambda x: x[0])
-            length = int(len(temp) / 2) + 1 if int(len(temp) / 2) + 1 >= Data.count_456 else len(temp)
+            # length = int(len(temp) / 2) + 1 if int(len(temp) / 2) + 1 >= Data.count_456 else len(temp)
+            length = Data.count_456 if len(temp) > Data.count_456 else len(temp)
             sons = []
+            # 插入距离进的 Data.count_456 个456
             for i in temp[:length]:
                 sons.append(i[1])
+            # 插入距离进 Data.distance_123 个123
             for i in [1, 2, 3]:
                 for j in self.node_type[i]:
                     if self.node_distance[key_node.id][j.id] < Data.distance_123:
                         sons.append(j)
+            # 选择距离类似的5个节点作为grand_son
+            grand_sons = []
+            length_2 = Data.count_456*2 if len(temp) > Data.count_456*2 else len(temp)
+            # for i in temp[length:length_2]:
+            #     grand_sons.append(i[1])
+            # 在其余节点中选择距离原材料近的作为grand_son
+            for node in sons_temp:
+                if node not in sons and node not in grand_sons:
+                    quits = False
+                    for material_type in Data.corresponding_material[node.type]:
+                        for node_123 in self.node_type[material_type]:
+                            if calDistance(node_123.x, node_123.y, node.x, node.y) < Data.distance_123:
+                                grand_sons.append(node)
+                                quits = True
+                                break
+                        if quits:
+                            break
 
             tree = Tree(key_node, 1)
-            tree.update_1(sons)
+            tree.update_1(sons, grand_sons)
 
-            self.schedule.size = 8
+            self.schedule.size_3 = 18
+            self.schedule.weight_3 = 2
+
         return tree

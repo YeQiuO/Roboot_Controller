@@ -1,7 +1,6 @@
 import math
 import sys
 
-import CheckCrush
 import Data
 import Physics
 
@@ -16,11 +15,11 @@ if __name__ == '__main__':
     start = 0
     end = 0
     while True:
+        Data.log_print('======= %d =======' % _data.frame)
         # 接收、处理数据、调度
         _data.update()
 
         # 发出指令
-        Data.log_print('======= %d =======' % _data.frame)
         sys.stdout.write('%d\n' % _data.frame)
         for i in range(4):
             if _data.current_works.list[i] is not None:
