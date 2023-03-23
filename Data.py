@@ -119,6 +119,9 @@ class Data:
                          float(robot[5]), float(robot[6]), float(robot[7]), float(robot[8]), float(robot[9]))
             self.robot.append(temp)
 
+        if self.frame == 8000:
+            self.schedule.size = 10
+
         # 初始化、更新树
         if self.frame == 1:
             # 计算距离矩阵
@@ -216,26 +219,7 @@ class Data:
         if self.current_works.wait != 0 and len(self.schedule.list) > 0:
             for i in range(len(self.current_works.list)):
                 if self.current_works.list[i] is None and len(self.schedule.list) > 0:
-                    self.current_works = self.schedule.get_task(i, self.robot, self.current_works, self.frame)
-
-                    # # 到达结束边缘临界
-                    # if self.frame > 8000 and not self.canFinish(task, self.robot[i].x, self.robot[i].y):
-                    #     # 如果还有多余任务
-                    #     self.product_456()
-                    #     if len(self.schedule.list) > 0:
-                    #         task = self.schedule.get_task(i, self.robot, self.current_works)
-                    #         if self.canFinish(task, self.robot[i].x, self.robot[i].y):
-                    #             self.stop_count[self.robot[i].id] = 0
-                    #         else:
-                    #             task = None
-                    #         self.stop_count[self.robot[i].id] += 1
-                    #     else:
-                    #         task = None
-                    #     if self.stop_count[self.robot[i].id] == 3:
-                    #         task = loaner()
-                    #
-                    # self.current_works.list[i] = task
-                    # self.current_works.wait -= 1
+                    self.current_works = self.schedule.get_task(i, self.robot, self.current_works, self.frame, self.node_type)
 
         while input() != "OK":
             pass
@@ -397,7 +381,7 @@ class Data:
                     distance += self.node_distance[temp[0][1].id][key_node[0].id]
 
             distance = distance / (len(sons) + len(super_sons))
-            self.in_advance_to_put[7] = (distance / 4.5) * 50 - 200
+            self.in_advance_to_put[7] = (distance / 4.5) * 50 - 400 if (distance / 4.5) * 50 > 550 else 150
 
             # count(7)=2, 更新sons，去重
             if len(node) == 2:
@@ -430,9 +414,9 @@ class Data:
                 for j in son:
                     sum += self.node_distance[i.id][j.id]
                 temp.append([sum, i])
-            log_print(temp)
             temp = sorted(temp, key=lambda x: x[0])
             key_node = temp[0][1]
+
             temp = []
             for i in [4, 5, 6]:
                 for j in self.node_type[i]:
@@ -449,4 +433,6 @@ class Data:
 
             tree = Tree(key_node, 1)
             tree.update_1(sons)
+
+            self.schedule.size = 8
         return tree

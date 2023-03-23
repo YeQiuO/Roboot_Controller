@@ -34,6 +34,7 @@ class Physics:
                 # self.reset_sustain()
             elif task_type == 1 and Data.have_space(node_ids[plat_id].material_state, robots[robot_id].thing_type):
                 sys.stdout.write('sell %d\n' % robot_id)
+                self.sustain[robot_id] = 0
 
         # 保持状态
         if self.sustain[robot_id] > 0:
@@ -85,26 +86,28 @@ class Physics:
             line_speed = 6
 
         # 防撞墙
-        temp_angle = 1 / 6 * math.pi
-        angle_direction = abs(angle_speed) / angle_speed if angle_speed != 0 else 1
-        duration = current_speed / 6 * 30
-        a = current_speed / 6 * 2
-        # Data.log_print("====" + str(robot_id) + "," + str(a)+ "," +str(duration)+','+str(abs(CalculateAngle(robot_direction, 0, -1))))
-        if robot_x < a and abs(CalculateAngle(robot_direction, -1, 0)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
-            return
-        elif robot_x > 50 - a and abs(CalculateAngle(robot_direction, 1, 0)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
-            return
-        elif robot_y < a and abs(CalculateAngle(robot_direction, 0, -1)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
-            return
-        elif robot_y > 50 - a and abs(CalculateAngle(robot_direction, 0, 1)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
-            return
+        if robots[robot_id].thing_type != 0:
+            temp_angle = 1 / 6 * math.pi
+            angle_direction = abs(angle_speed) / angle_speed if angle_speed != 0 else 1
+            duration = current_speed / 6 * 30
+            a = current_speed / 6 * 2
+            # Data.log_print("====" + str(robot_id) + "," + str(a)+ "," +str(duration)+','+str(abs(CalculateAngle(robot_direction, 0, -1))))
+            if robot_x < a and abs(CalculateAngle(robot_direction, -1, 0)) <= temp_angle:
+                self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+                return
+            elif robot_x > 50 - a and abs(CalculateAngle(robot_direction, 1, 0)) <= temp_angle:
+                self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+                return
+            elif robot_y < a and abs(CalculateAngle(robot_direction, 0, -1)) <= temp_angle:
+                self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+                return
+            elif robot_y > 50 - a and abs(CalculateAngle(robot_direction, 0, 1)) <= temp_angle:
+                self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+                return
 
         # 防止同时到达相同目标点
-        parameter_1 = 2  # 前后保持的距离
+        parameter_1 = node_ids[target_id].remain_time / 150 * 4 + 6 if node_ids[target_id].type == 7 and task_type == 1 and node_ids[target_id].remain_time<150 \
+            else 2  # 前后保持的距离
         remain_distance = current_works.remain_distance
         for i in range(4):
             if i != robot_id and current_works.list[i] is not None:
