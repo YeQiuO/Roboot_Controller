@@ -13,7 +13,7 @@ class Schedule:
         self.priority_2 = []
         self.priority_3 = []
 
-        self.size_3 = 6
+        self.size_3 = 4
 
         self.weight_1 = 0.5
         self.weight_2 = 1.5
@@ -24,7 +24,6 @@ class Schedule:
         # 预约原材料格
         self.already_schedule_end_node_ids = [[], [], [], [], [], [], [], [], [], []]
 
-        self.size = 2
         self.node_distance = []
 
     def insert_priority_1(self, task):
@@ -42,7 +41,6 @@ class Schedule:
 
         # 抢断
         task = self.find_shortest_path_task(robots[robot_id].x, robots[robot_id].y, node_type, current_works, frame)
-        Data.log_print("抢断" + str(task.start.type))
         closest = Data.calDistance(robots[robot_id].x, robots[robot_id].y, task.start.x, task.start.y)
         closest_id = -1
         for i in range(4):
@@ -122,8 +120,8 @@ class Schedule:
                 better_node = node
                 shortest_distance = temp
         # 如果找到更优起始结点 替代
-        if better_node is not None:
-            if start.type in [4, 5, 6]:
+        if better_node is not None and self.already_schedule_start_node_ids.count(better_node.id) == 0:
+            if start.type in [4, 5, 6, 7]:
                 self.already_schedule_start_node_ids.remove(start.id)
                 self.already_schedule_start_node_ids.append(better_node.id)
 

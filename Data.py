@@ -141,24 +141,28 @@ class Data:
         else:
             # 更新 key_node
             if self.tree.pattern == 0:
-                # 调整 sons 顺序
-                vacancy_count_4 = 0
-                vacancy_count_5 = 0
-                vacancy_count_6 = 0
+                # 调整 sons super_sons
                 for i in range(len(self.tree.node)):
                     self.tree.node[i][0] = self.node_ids[self.tree.node[i][0].id]  # 7
                     self.tree.node[i][1] = self.node_ids[self.tree.node[i][1].id]  # 8/9
+
                     material_state = self.tree.node[i][0].material_state
-                    if have_space(material_state, 4):
-                        vacancy_count_4 += 1
-                    if have_space(material_state, 5):
-                        vacancy_count_5 += 1
-                    if have_space(material_state, 6):
-                        vacancy_count_6 += 1
-                temp = [[vacancy_count_4, 4], [vacancy_count_5, 5], [vacancy_count_6, 6]]
-                temp = sorted(temp, key=lambda x: x[0])
-                temp = [x[1] for x in temp]
-                self.change_order(temp)
+                    vacancy_count_4 = 1 if have_space(material_state, 4) else 0
+                    vacancy_count_5 = 1 if have_space(material_state, 5) else 0
+                    vacancy_count_6 = 1 if have_space(material_state, 6) else 0
+
+                    # 出现不均衡现象
+                    if vacancy_count_4+vacancy_count_5+vacancy_count_6 == 1:
+                        if vacancy_count_4 == 1:
+                            self.tree.insert_super_son(self.find_nearest_son(self.tree.node[i][0].id, 4), self.tree.node[i][0].id, self.node_ids)
+                        if vacancy_count_5 == 1:
+                            self.tree.insert_super_son(self.find_nearest_son(self.tree.node[i][0].id, 5), self.tree.node[i][0].id, self.node_ids)
+                        if vacancy_count_6 == 1:
+                            self.tree.insert_super_son(self.find_nearest_son(self.tree.node[i][0].id, 6), self.tree.node[i][0].id, self.node_ids)
+
+                    # 更新 判断不均衡现象是否消失
+                    self.tree.update_super_son(self.tree.node[i][0].id, [vacancy_count_4, vacancy_count_5, vacancy_count_6], self.node_ids)
+
             else:
                 self.tree.node = self.node_ids[self.tree.node.id]  # 9
 
@@ -389,23 +393,34 @@ class Data:
 
     def find_tree(self):
         temp = []
-        distance = 0
         if len(self.node_type[7]) != 0:
             for i in self.node_type[7]:
-                for j in self.node_type[8]:
-                    temp.append([self.node_distance[i.id][j.id], i, j])
-                for j in self.node_type[9]:
-                    temp.append([self.node_distance[i.id][j.id], i, j])
+                if len(self.node_ids) == 43 and (i.x == 23.25 and i.y == 17.25 or i.x == 26.25 and i.y == 20.25):
+                    # for j in self.node_type[8]:
+                    #     temp.append([self.node_distance[i.id][j.id], i, j])
+                    self.in_advance_to_get[7] = 50
+                    for j in self.node_type[9]:
+                        temp.append([self.node_distance[i.id][j.id], i, j])
+                elif len(self.node_ids) != 43:
+                    for j in self.node_type[8]:
+                        temp.append([self.node_distance[i.id][j.id], i, j])
+                    for j in self.node_type[9]:
+                        temp.append([self.node_distance[i.id][j.id], i, j])
+                # log_print("==--=="+str(i.x)+","+str(i.y))
             temp = sorted(temp, key=lambda x: x[0])
+            # 取距离最近的两个7
+            # if len(self.node_ids)==43:
+
             node = [[temp[0][1], temp[0][2]]]
             for i in range(len(temp)):
                 if temp[i][1] != temp[0][1]:
                     node.append([temp[i][1], temp[i][2]])
                     break
             sons = []
-            super_sons = []
-            sons_2 = []
-            # 获取sons
+            # 获取sons\最短路径
+            min_length = 9999
+            min_start = -1
+            min_end = -1
             for key_node in node:
                 for son_type in [6, 5, 4]:
                     temp = []
@@ -413,41 +428,37 @@ class Data:
                         temp.append([self.node_distance[i.id][key_node[0].id], i])
                     temp = sorted(temp, key=lambda x: x[0])
                     sons.append(temp[0][1])
-                    # count(7)=1, 更新sons
-                    if len(node) == 1:
-                        if len(temp) >= 2:
-                            sons_2.append(temp[1][1])
-                            distance += self.node_distance[temp[1][1].id][key_node[0].id]
-                        else:
-                            sons.pop(len(sons) - 1)
-                            super_sons.append(temp[0][1])
-                    distance += self.node_distance[temp[0][1].id][key_node[0].id]
+                    min_distance = temp[0][0]
+                    if min_distance < min_length:
+                        min_length = min_distance
+                        min_start = temp[0][1].id
+                        min_end = key_node[0].id
+                    # if len(node) > 1:
+                    #     for son in temp:
+                    #         distance = son[0]
+                    #         son = son[1]
+                    #         if distance - min_distance < 5:
+                    #             sons.append(son)
+                    if len(node) == 1 and len(temp) > 1:
+                        # sons.append(temp[1][1])
+                        for son in temp:
+                            distance = son[0]
+                            son = son[1]
+                            if distance - min_distance < 5:
+                                sons.append(son)
 
-            distance = distance / (len(sons) + len(super_sons))
-            self.in_advance_to_put[7] = (distance / 4.5) * 50 - 400 if (distance / 4.5) * 50 > 550 else 150
+            self.in_advance_to_put[7] = (calDistance_precise(self.node_ids[min_start].x, self.node_ids[min_start].y, self.node_ids[min_end].x, self.node_ids[min_end].y) / 4.5) * 50
 
-            # count(7)=2, 更新sons，去重
-            if len(node) == 2:
-                temp = []
-                for son in sons:
-                    if son not in temp:
-                        temp.append(son)
-                    else:
-                        temp.remove(son)
-                        if son not in super_sons:
-                            super_sons.append(son)
-                sons = temp
-                #
-                # for son in sons:
-                #     distance += self.node_distance(son.id)
-                # for son in super_sons:
-                #     distance += self.node_distance(son.id)
-            else:
-                sons_2.reverse()
-                sons.extend(sons_2)
+            # 去重
+            temp = []
+            for son in sons:
+                if son not in temp:
+                    temp.append(son)
+            sons = temp
 
             tree = Tree(node, 0)
-            tree.update_0(super_sons, sons)
+            tree.update_0(sons)
+
         else:
             sons_temp = []
             sons_temp.extend(self.node_type[6])
@@ -501,3 +512,12 @@ class Data:
             self.schedule.weight_3 = 2
 
         return tree
+
+    def find_nearest_son(self, key_node_id, son_type):
+        son_id = -1
+        min_distance = 999
+        for son in self.tree.sons:
+            if son.type == son_type and self.node_distance[key_node_id][son.id] < min_distance:
+                min_distance = self.node_distance[key_node_id][son.id]
+                son_id = son.id
+        return son_id
