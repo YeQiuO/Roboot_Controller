@@ -108,18 +108,20 @@ class Physics:
             self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
             return
         elif robot_y < a*par_1 and robot_x < a*par_1 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle*2:
-            angle_speed = math.pi if robot_direction > -3/2*math.pi or robot_angle_speed > 0 else -math.pi
+            angle_speed = math.pi if robot_direction > -3/4*math.pi or robot_angle_speed > 0 else -math.pi
             self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
             return
         elif robot_y < a*par_1 and robot_x > 50 - a*par_1 and abs(CalculateAngle(robot_direction, 1, -1)) <= temp_angle*2:
-            angle_speed = math.pi if robot_direction > -1/2*math.pi or robot_angle_speed > 0 else -math.pi
+            angle_speed = math.pi if robot_direction > -1/4*math.pi or robot_angle_speed > 0 else -math.pi
             self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
             return
         elif robot_y > 50 - a*par_1 and robot_x < a*par_1 and abs(CalculateAngle(robot_direction, -1, 1)) <= temp_angle*2:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*par_2)
+            angle_speed = math.pi if robot_direction > 3/4*math.pi or robot_angle_speed > 0 else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
             return
         elif robot_y > 50 - a*par_1 and robot_x > 50 - a*par_1 and abs(CalculateAngle(robot_direction, 1, 1)) <= temp_angle*2:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*par_2)
+            angle_speed = math.pi if robot_direction > 1/4*math.pi or robot_angle_speed > 0 else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
             return
         # 左下
         # elif robot_y < a*par_1 and robot_x < a*par_1 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle*2:
@@ -145,6 +147,7 @@ class Physics:
         #     angle_speed = abs(robot_angle_speed)/robot_angle_speed*math.pi if abs(robot_angle_speed) > 1/3*math.pi else angle_speed
         #     self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
         #     return
+        
 
         # 防止同时到达相同目标点
         parameter_1 = current_speed / 6 + 2  # 前后保持的距离
@@ -358,6 +361,9 @@ class Physics:
 
                 self.robots_toward_to_line[robot.id][i] = CalculateAngle(robot.towards, robots[i].x - robot.x,
                                                                          robots[i].y - robot.y)
+
+    def will_crush(self, robot_id):
+        pass
 
 
 # 计算 direction方向 和 (target_x,target_y)方向 的夹角，以 direction方向 为起始方向，正逆负顺
