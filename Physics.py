@@ -105,6 +105,18 @@ class Physics:
         elif robot_y > 50 - a and abs(CalculateAngle(robot_direction, 0, 1)) <= temp_angle:
             self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
             return
+        elif robot_y < a*0.8 and robot_x < a*0.8 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle*2:
+            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*2)
+            return
+        elif robot_y < a*0.8 and robot_x > 50 - a*0.8 and abs(CalculateAngle(robot_direction, 1, -1)) <= temp_angle*2:
+            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*2)
+            return
+        elif robot_y > 50 - a*0.8 and robot_x < a*0.8 and abs(CalculateAngle(robot_direction, -1, 1)) <= temp_angle*2:
+            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*2)
+            return
+        elif robot_y > 50 - a*0.8 and robot_x > 50 - a*0.8 and abs(CalculateAngle(robot_direction, 1, 1)) <= temp_angle*2:
+            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*2)
+            return
 
         # 防止同时到达相同目标点
         parameter_1 = current_speed / 6 * 2  # 前后保持的距离

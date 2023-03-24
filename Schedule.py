@@ -15,11 +15,11 @@ class Schedule:
 
         self.size_3 = 6
 
-        self.weight_1 = 1
-        self.weight_2 = 1
+        self.weight_1 = 0.5
+        self.weight_2 = 1.5
         self.weight_3 = 3
 
-        # 预约产品格【仅仅预约456的产品】
+        # 预约产品格【仅仅预约4567的产品】
         self.already_schedule_start_node_ids = []
         # 预约原材料格
         self.already_schedule_end_node_ids = [[], [], [], [], [], [], [], [], [], []]

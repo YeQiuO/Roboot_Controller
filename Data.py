@@ -200,7 +200,7 @@ class Data:
                     # 结束预约
                     self.schedule.already_schedule_end_node_ids[start.type].remove(
                         self.current_works.list[robot.id].end.id)
-                    if start.type in [4, 5, 6]:
+                    if start.type in [4, 5, 6, 7]:
                         self.schedule.already_schedule_start_node_ids.remove(start.id)
 
                     log_print(str(robot.id) + '任务完成' + str(self.current_works.list[robot.id].start.type))
@@ -247,6 +247,7 @@ class Data:
         order = [x[1] for x in order]
 
         for node in order:
+            # log_print("==7"+","+str(node[0].x)+","+str(node[0].y))
             for super_son in self.tree.super_sons:
                 # 未生产的工作台优先寻找产品
                 if in_produce == 0 and node[0].remain_time == -1:
@@ -308,8 +309,10 @@ class Data:
         return have_space(end.material_state, type) or mua
 
     def consume(self, start, end):
-        if start.type in [7]:
+        if start.type in [7] or (self.frame < 7000 and ((end in self.tree.super_sons and end.product_state == 0) or (start in self.tree.super_sons))):
             self.schedule.insert_priority_1(Task(start, end))
+            # 预约产品格
+            self.schedule.already_schedule_start_node_ids.append(start.id)
         elif start.type in [4, 5, 6]:
             self.schedule.insert_priority_2(Task(start, end))
             # 预约产品格
@@ -394,10 +397,11 @@ class Data:
                 for j in self.node_type[9]:
                     temp.append([self.node_distance[i.id][j.id], i, j])
             temp = sorted(temp, key=lambda x: x[0])
-            if len(temp) == 1:
-                node = [[temp[0][1], temp[0][2]]]
-            else:
-                node = [[temp[0][1], temp[0][2]], [temp[1][1], temp[1][2]]]
+            node = [[temp[0][1], temp[0][2]]]
+            for i in range(len(temp)):
+                if temp[i][1] != temp[0][1]:
+                    node.append([temp[i][1], temp[i][2]])
+                    break
             sons = []
             super_sons = []
             sons_2 = []
@@ -474,7 +478,7 @@ class Data:
                         sons.append(j)
             # 选择距离类似的5个节点作为grand_son
             grand_sons = []
-            length_2 = Data.count_456*2 if len(temp) > Data.count_456*2 else len(temp)
+            # length_2 = Data.count_456*2 if len(temp) > Data.count_456*2 else len(temp)
             # for i in temp[length:length_2]:
             #     grand_sons.append(i[1])
             # 在其余节点中选择距离原材料近的作为grand_son
