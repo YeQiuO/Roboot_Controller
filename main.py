@@ -1,24 +1,18 @@
 import numpy as np
 import sys
 import math
-# import Node
-#F = open('test.txt', "a+")
+import Physics4 as Physics4
+import Physics2 as Physics2
+
 # 完成初始化标记
 from map1.main import run1
-from map2 import Physics_2
 from map3.main import run3
-from map4 import Physics_4
 
 flag = False
 # 工作台信息
 worker_infos = []
 # 工作台数量
 worker_num = 0
-# 各类型工作台数量
-# type_num = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-# 消费类型价值权重(用于4，5，6类型工作台)，作为消费者其数量越少的约需要优先完成任务，否则会出现任务饥饿
-# consume_factor = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 # 机器人信息 0:所处工作台; 1:携带物品类型;2:时间价值系数;3:碰撞系数;4:角速度;5.前进速度;6:方向;7:x坐标;8:y坐标;9:x轴线速度;10:y轴线速度
 robot_infos = [
@@ -55,7 +49,7 @@ distance_graph = np.zeros((50, 50))
 # 消费者队列
 consumer_list = [[], [], [], [], [], [], []]
 # 生产者队列
-#producer_list = [[], [], [], [], [], [], []]
+# producer_list = [[], [], [], [], [], [], []]
 # 价值队列
 value_producer_list = [[], [], []]
 # 在产物品数量记录表
@@ -65,7 +59,7 @@ task_list = []
 # 专属任务队列
 custom_task_list = [[], [], [], []]
 # 价值系数
-value_factor = [1, 1, 1, 100, 110, 120 , 5000]
+value_factor = [1, 1, 1, 100, 110, 120, 5000]
 # 距离系数
 distance_factor = 70
 # 距离终点系数
@@ -73,7 +67,7 @@ distance_center_factor = 30
 # 投资系数(同类型消费工作台中，持有物品越多的被优先送的优先级越高)
 invest_factor = 10
 # 中心点（离中心点越近权值越大）
-center = [25,25]
+center = [25, 25]
 # 7类工作台队列
 priority_list = []
 # 有7标记
@@ -124,7 +118,6 @@ def initWorkerInfo(line):
         haveNine = True
 
 
-
 # 初始化工作台信息
 def updateWorkerInfo(worker_id, line):
     infos = line.split(" ")
@@ -135,7 +128,7 @@ def updateWorkerInfo(worker_id, line):
     worker_infos[worker_id][5] = int(infos[5])  # 更新产品格状态
 
     worker_infos[worker_id][6] = 0  # 更新产品格状态
-    holder = numConvertBinaryList(worker_infos[worker_id][4])[::-1] #工作台持有物品情况转二进制表示
+    holder = numConvertBinaryList(worker_infos[worker_id][4])[::-1]  # 工作台持有物品情况转二进制表示
     # 遍历依赖关系,更新工作台持有物品的数量
     for j in range(9):
         if depend_graph[j][worker_infos[worker_id][0] - 1] == 1 and holder[j + 1] == '1':
@@ -143,7 +136,8 @@ def updateWorkerInfo(worker_id, line):
 
     # 统计场上完成生产且未取走的物品数量
     if worker_infos[worker_id][5] == 1:
-        finished_num[worker_infos[worker_id][0]-1] = finished_num[worker_infos[worker_id][0]-1] + 1
+        finished_num[worker_infos[worker_id][0] - 1] = finished_num[worker_infos[worker_id][0] - 1] + 1
+
 
 # 获取机器人信息
 def updateRobotInfo(robot_id, line):
@@ -166,7 +160,8 @@ def updateRobotInfo(robot_id, line):
 # 刷新生产者队列
 def refreshProducerList():
     for i in range(worker_num):
-        if worker_infos[i][5] == 1 and (not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
+        if worker_infos[i][5] == 1 and (not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (
+        not producerIsExistInCustomTaskList(i)):
             temp_worker_type = worker_infos[i][0]
             if temp_worker_type == 1 or temp_worker_type == 2 or temp_worker_type == 3:
                 value_producer_list[2].append(i)
@@ -175,33 +170,57 @@ def refreshProducerList():
             elif temp_worker_type == 7:
                 value_producer_list[0].append(i)
         # 即将完成生产的工作台的物品也被视为可购买
-        if worker_infos[i][3] < 10 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
-            temp_worker_type = worker_infos[i][0]
-            if temp_worker_type == 1 or temp_worker_type == 2 or temp_worker_type == 3:
-                value_producer_list[2].append(i)
-            elif temp_worker_type == 4:
-                value_producer_list[1].append(i)
+        if worker_num == 18:
+            if worker_infos[i][3] < 15 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (
+            not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
+                temp_worker_type = worker_infos[i][0]
+                if temp_worker_type == 1 or temp_worker_type == 2 or temp_worker_type == 3:
+                    value_producer_list[2].append(i)
+                elif temp_worker_type == 4 or temp_worker_type == 5 or temp_worker_type == 6:
+                    value_producer_list[1].append(i)
             # elif temp_worker_type == 7:
             #     value_producer_list[0].append(i)
-        if worker_infos[i][3] < 20 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
-            temp_worker_type = worker_infos[i][0]
-            if temp_worker_type == 4:
-                value_producer_list[1].append(i)
-        if worker_infos[i][3] < 100 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
-            temp_worker_type = worker_infos[i][0]
-            if temp_worker_type == 5:
-                value_producer_list[1].append(i)
-        if worker_infos[i][3] < 120 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
-            temp_worker_type = worker_infos[i][0]
-            if  temp_worker_type == 6:
-                value_producer_list[1].append(i)
 
-        if worker_infos[i][0] == 7 and  worker_infos[i][3] < 120 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
-            value_producer_list[0].append(i)
+            if worker_infos[i][0] == 7 and worker_infos[i][3] < 140 and worker_infos[i][3] > -1 and (
+            not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (
+            not producerIsExistInCustomTaskList(i)):
+                value_producer_list[0].append(i)
+
+        # 图二参数
+        if worker_num == 25:
+            if worker_infos[i][3] < 10 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (
+            not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
+                temp_worker_type = worker_infos[i][0]
+                if temp_worker_type == 1 or temp_worker_type == 2 or temp_worker_type == 3:
+                    value_producer_list[2].append(i)
+                elif temp_worker_type == 4 or temp_worker_type == 5 or temp_worker_type == 6:
+                    value_producer_list[1].append(i)
+            if worker_infos[i][3] < 20 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (
+                    not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
+                temp_worker_type = worker_infos[i][0]
+                if temp_worker_type == 4:
+                    value_producer_list[1].append(i)
+            if worker_infos[i][3] < 100 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (
+                    not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
+                temp_worker_type = worker_infos[i][0]
+                if temp_worker_type == 5:
+                    value_producer_list[1].append(i)
+            if worker_infos[i][3] < 120 and worker_infos[i][3] > -1 and (not producerIsExistInRobotList(i)) and (
+                    not producerIsExistInValueList(i)) and (not producerIsExistInCustomTaskList(i)):
+                temp_worker_type = worker_infos[i][0]
+                if temp_worker_type == 6:
+                    value_producer_list[1].append(i)
+
+            if worker_infos[i][0] == 7 and worker_infos[i][3] < 120 and worker_infos[i][3] > -1 and (
+            not producerIsExistInRobotList(i)) and (not producerIsExistInValueList(i)) and (
+            not producerIsExistInCustomTaskList(i)):
+                value_producer_list[0].append(i)
+
 
 # 刷新生产者队列
 def insertToProducerList(worker_id):
-    if (not producerIsExistInRobotList(worker_id)) and (not producerIsExistInValueList(worker_id)) and (not producerIsExistInCustomTaskList(worker_id)):
+    if (not producerIsExistInRobotList(worker_id)) and (not producerIsExistInValueList(worker_id)) and (
+    not producerIsExistInCustomTaskList(worker_id)):
         temp_worker_type = worker_infos[worker_id][0]
         if temp_worker_type == 1 or temp_worker_type == 2 or temp_worker_type == 3:
             value_producer_list[2].append(worker_id)
@@ -209,6 +228,7 @@ def insertToProducerList(worker_id):
             value_producer_list[1].append(worker_id)
         elif temp_worker_type == 7:
             value_producer_list[0].append(worker_id)
+
 
 # 序号为worker_id的工作台是否已经存在于任务序列和执行序列以及生产者队列
 def producerIsOk(worker_id):
@@ -227,44 +247,47 @@ def producerIsOk(worker_id):
                 return True
     return False
 
+
 # 判断机器人顺路执行该任务所付出的代价是否在承受范围之内
-def canTogether(robot_id,buy_id,sell_id):
-    r_x = robot_infos[robot_id][7]# 机器人当前x坐标
-    r_y = robot_infos[robot_id][8]# 机器人当前y坐标
-    old_distance = 0 # 机器人直接去原采购点需要花费的距离
-    new_distance = 0 # 机器人先去新采购点将物品放入新售出点再去原采购点需要花费的距离
+def canTogether(robot_id, buy_id, sell_id):
+    r_x = robot_infos[robot_id][7]  # 机器人当前x坐标
+    r_y = robot_infos[robot_id][8]  # 机器人当前y坐标
+    old_distance = 0  # 机器人直接去原采购点需要花费的距离
+    new_distance = 0  # 机器人先去新采购点将物品放入新售出点再去原采购点需要花费的距离
     if robot_task[robot_id][0] == 0:
-        old_buy_id = robot_task[robot_id][1]# 原采购点id
-        old_buy_x = worker_infos[old_buy_id][1]# 原采购点x坐标
-        old_buy_y = worker_infos[old_buy_id][2]# 原采购点y坐标
-        old_distance = calDistance(r_x, r_y, old_buy_x, old_buy_y)# 计算机器人到原采购点的距离
-        distance_r2nb = calDistance(r_x, r_y, worker_infos[buy_id][1], worker_infos[buy_id][2])# 计算机器人到新采购点的距离
-        distance_bn2ns = distance_graph[buy_id][sell_id]# 计算从新采购点到新销售点的距离
-        distance_ns2ob = distance_graph[sell_id][old_buy_id]# 计算从新销售点到原采购点的距离
-        new_distance = distance_r2nb + distance_bn2ns + distance_ns2ob# 计算新路线需要花费的距离
+        old_buy_id = robot_task[robot_id][1]  # 原采购点id
+        old_buy_x = worker_infos[old_buy_id][1]  # 原采购点x坐标
+        old_buy_y = worker_infos[old_buy_id][2]  # 原采购点y坐标
+        old_distance = calDistance(r_x, r_y, old_buy_x, old_buy_y)  # 计算机器人到原采购点的距离
+        distance_r2nb = calDistance(r_x, r_y, worker_infos[buy_id][1], worker_infos[buy_id][2])  # 计算机器人到新采购点的距离
+        distance_bn2ns = distance_graph[buy_id][sell_id]  # 计算从新采购点到新销售点的距离
+        distance_ns2ob = distance_graph[sell_id][old_buy_id]  # 计算从新销售点到原采购点的距离
+        new_distance = distance_r2nb + distance_bn2ns + distance_ns2ob  # 计算新路线需要花费的距离
         # 如果新距离不超过原有距离的130%
         if old_distance * 1.5 > new_distance:
             return True
     return False
 
+
 # 判断机器人顺路执行该任务所付出的代价
-def calCost(robot_id,buy_id,sell_id):
-    r_x = robot_infos[robot_id][7]# 机器人当前x坐标
-    r_y = robot_infos[robot_id][8]# 机器人当前y坐标
-    old_distance = 0 # 机器人直接去原采购点需要花费的距离
-    new_distance = 0 # 机器人先去新采购点将物品放入新售出点再去原采购点需要花费的距离
+def calCost(robot_id, buy_id, sell_id):
+    r_x = robot_infos[robot_id][7]  # 机器人当前x坐标
+    r_y = robot_infos[robot_id][8]  # 机器人当前y坐标
+    old_distance = 0  # 机器人直接去原采购点需要花费的距离
+    new_distance = 0  # 机器人先去新采购点将物品放入新售出点再去原采购点需要花费的距离
     if robot_task[robot_id][0] == 0:
-        old_buy_id = robot_task[robot_id][1]# 原采购点id
-        old_buy_x = worker_infos[old_buy_id][1]# 原采购点x坐标
-        old_buy_y = worker_infos[old_buy_id][2]# 原采购点y坐标
-        old_distance = calDistance(r_x, r_y, old_buy_x, old_buy_y)# 计算机器人到原采购点的距离
-        distance_r2nb = calDistance(r_x, r_y, worker_infos[buy_id][1], worker_infos[buy_id][2])# 计算机器人到新采购点的距离
-        distance_bn2ns = distance_graph[buy_id][sell_id]# 计算从新采购点到新销售点的距离
-        distance_ns2ob = distance_graph[sell_id][old_buy_id]# 计算从新销售点到原采购点的距离
-        new_distance = distance_r2nb + distance_bn2ns + distance_ns2ob# 计算新路线需要花费的距离
+        old_buy_id = robot_task[robot_id][1]  # 原采购点id
+        old_buy_x = worker_infos[old_buy_id][1]  # 原采购点x坐标
+        old_buy_y = worker_infos[old_buy_id][2]  # 原采购点y坐标
+        old_distance = calDistance(r_x, r_y, old_buy_x, old_buy_y)  # 计算机器人到原采购点的距离
+        distance_r2nb = calDistance(r_x, r_y, worker_infos[buy_id][1], worker_infos[buy_id][2])  # 计算机器人到新采购点的距离
+        distance_bn2ns = distance_graph[buy_id][sell_id]  # 计算从新采购点到新销售点的距离
+        distance_ns2ob = distance_graph[sell_id][old_buy_id]  # 计算从新销售点到原采购点的距离
+        new_distance = distance_r2nb + distance_bn2ns + distance_ns2ob  # 计算新路线需要花费的距离
         # 如果新距离不超过原有距离的130%
         return new_distance - old_distance
     return -1
+
 
 # 检测是否存在顺路的任务
 def generateTogetherTask(robot_id):
@@ -274,8 +297,8 @@ def generateTogetherTask(robot_id):
     # 遍历消费者列表，找到机器人附近可以顺路做的任务
     for i in range(len(consumer_list)):
         for j in range(len(consumer_list[i])):
-            consumer_id = consumer_list[i][j] # 可用的消费者id
-            consumer_type = i + 1 #消费者想要的物品类型
+            consumer_id = consumer_list[i][j]  # 可用的消费者id
+            consumer_type = i + 1  # 消费者想要的物品类型
             # 当消费点与机器人当前需要执行的采购任务点非常接近时，说明在完成该消费任务后能顺便继续做采购任务，因此尝试为其寻找适合的采购点
             if distance_graph[robot_task[robot_id][1]][consumer_id] < 2:
                 # print('%d号机器人3米内有%d号工作台需要%d类型材料' %(robot_id,consumer_id,consumer_type),file=F)
@@ -289,31 +312,27 @@ def generateTogetherTask(robot_id):
                     level = 0
                 # 遍历value_task_list目标行寻找适配的采购点
                 for k in range(len(value_producer_list[level])):
-                    producer_id = value_producer_list[level][k] #可用的采购点id
-                    product_type = worker_infos[producer_id][0] #该采购点提供的物品类型
+                    producer_id = value_producer_list[level][k]  # 可用的采购点id
+                    product_type = worker_infos[producer_id][0]  # 该采购点提供的物品类型
                     # 判断该采购点生成的物品类型是否是消费点需要的类型，同时顺路做该任务的代价必须在承受范围，
                     # 如果符合条件则将这个任务作为机器人当前的任务，原任务在该任务执行完之后再执行(即将原任务放入机器人专属任务队列的首位)
-                    if product_type == consumer_type and canTogether(robot_id,producer_id,consumer_id):
+                    if product_type == consumer_type and canTogether(robot_id, producer_id, consumer_id):
                         # print('%d工作点符合条件,可以进行任务切换' % (producer_id),file=F)
                         # print('旧任务为从%d出发运送%d类物品到%d号工作台' % ( robot_task[robot_id][1], worker_infos[robot_task[robot_id][1]][0], robot_task[robot_id][2]), file=F)
                         # print('新任务为从%d出发运送%d类物品到%d号工作台' % (producer_id,product_type,consumer_id),file=F)
-                        task = [0,robot_task[robot_id][1],robot_task[robot_id][2]]
+                        task = [0, robot_task[robot_id][1], robot_task[robot_id][2]]
                         robot_task[robot_id][0] = 0
                         robot_task[robot_id][1] = producer_id
                         robot_task[robot_id][2] = consumer_id
-                        custom_task_list[robot_id].insert(0,task)
+                        custom_task_list[robot_id].insert(0, task)
                         removeProducerFromValueProducerList(producer_id)
-                        removeConsumerFromConsumerList(consumer_id,product_type)
+                        removeConsumerFromConsumerList(consumer_id, product_type)
                         return
+
 
 def robExecutingTask(robot_id):
     if robot_task[robot_id][0] == -1:
         return False
-
-    # if globalIsLoseBalance() and worker_infos[robot_task[robot_id][2]][0] == getMinTypeOf456():
-    #     #print('456发生失衡,最少类型为%d,%d号机器人不允许接顺风任务' % (getMinType(),robot_id), file=F)
-    #     return
-
     r_x = robot_infos[robot_id][7]
     r_y = robot_infos[robot_id][8]
     r_buy_id = robot_task[robot_id][1]
@@ -325,11 +344,12 @@ def robExecutingTask(robot_id):
             continue
         buy_id = robot_task[m][1]
         sell_id = robot_task[m][2]
-        distance_r2p = calDistance(r_x, r_y, worker_infos[buy_id][1],worker_infos[buy_id][2])  # 计算robot_id到该任务采购点的距离
-        distance_m2p = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[buy_id][1],worker_infos[buy_id][2])  # 计算m到该任务采购点的距
+        distance_r2p = calDistance(r_x, r_y, worker_infos[buy_id][1], worker_infos[buy_id][2])  # 计算robot_id到该任务采购点的距离
+        distance_m2p = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[buy_id][1],
+                                   worker_infos[buy_id][2])  # 计算m到该任务采购点的距
         # 如果m号机器人的采购点在robot_id号机器人附近，且要去的m号机器人采购点的距离小于m号机器人自己去采购点距离的一半，同时能顺路执行，那就抢占该任务
-        if distance_r2p < 50 and canTogether(robot_id,buy_id,sell_id) and distance_r2p < distance_m2p/1.8:
-            #print('%d号机器人成功抢占%d号机器人的任务,去的采购的路上顺路做' % (robot_id, m), file=F)
+        if distance_r2p < 50 and canTogether(robot_id, buy_id, sell_id) and distance_r2p < distance_m2p / 1.8:
+            # print('%d号机器人成功抢占%d号机器人的任务,去的采购的路上顺路做' % (robot_id, m), file=F)
             task = [0, robot_task[robot_id][1], robot_task[robot_id][2]]
             robot_task[robot_id][0] = 0
             robot_task[robot_id][1] = buy_id
@@ -350,11 +370,13 @@ def robExecutingTask(robot_id):
         if robot_task[robot_id][0] == 0:
             distance_r2c = distance_r2p + distance_p2c
         else:
-            distance_r2c = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8],worker_infos[buy_id][1], worker_infos[buy_id][2])
-        distance_m2c = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[buy_id][1], worker_infos[buy_id][2])
+            distance_r2c = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[buy_id][1],
+                                       worker_infos[buy_id][2])
+        distance_m2c = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[buy_id][1],
+                                   worker_infos[buy_id][2])
         # 如果m号机器人的采购点在robot_id号机器人附近，且要去的m号机器人采购点的距离小于m号机器人自己去采购点距离的一半，同时能顺路执行，那就抢占该任务
-        if buy_id == robot_task[robot_id][2] and distance_m2c > distance_r2c/1 and distance_m2c > 15:
-            #print('%d号机器人成功抢占%d号机器人的任务,卖完了之后顺路做' % (robot_id, m), file=F)
+        if buy_id == robot_task[robot_id][2] and distance_m2c > distance_r2c / 1 and distance_m2c > 15:
+            # print('%d号机器人成功抢占%d号机器人的任务,卖完了之后顺路做' % (robot_id, m), file=F)
             task = [0, buy_id, sell_id]
             custom_task_list[robot_id].insert(0, task)
             robot_task[m][0] = -1
@@ -366,11 +388,13 @@ def robExecutingTask(robot_id):
         for n in range(len(custom_task_list[m])):
             buy_id = custom_task_list[m][n][1]
             sell_id = custom_task_list[m][n][2]
-            distance_r2p = calDistance(r_x, r_y, worker_infos[buy_id][1], worker_infos[buy_id][2])  # 计算robot_id到该任务采购点的距离
-            distance_m2p = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[buy_id][1], worker_infos[buy_id][2])  # 计算m到该任务采购点的距
+            distance_r2p = calDistance(r_x, r_y, worker_infos[buy_id][1],
+                                       worker_infos[buy_id][2])  # 计算robot_id到该任务采购点的距离
+            distance_m2p = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[buy_id][1],
+                                       worker_infos[buy_id][2])  # 计算m到该任务采购点的距
             # 如果m号机器人的采购点在robot_id号机器人附近，且要去的m号机器人采购点的距离小于m号机器人自己去采购点距离的一半，同时能顺路执行，那就抢占该任务
-            if distance_r2p < 50 and canTogether(robot_id,buy_id,sell_id) and distance_r2p < distance_m2p/2:
-                #print('%d号机器人成功抢占%d号机器人的后备任务,去的采购的路上顺路做' % (robot_id, m), file=F)
+            if distance_r2p < 50 and canTogether(robot_id, buy_id, sell_id) and distance_r2p < distance_m2p / 2:
+                # print('%d号机器人成功抢占%d号机器人的后备任务,去的采购的路上顺路做' % (robot_id, m), file=F)
                 task = [0, robot_task[robot_id][1], robot_task[robot_id][2]]
                 robot_task[robot_id][0] = 0
                 robot_task[robot_id][1] = buy_id
@@ -383,32 +407,32 @@ def robExecutingTask(robot_id):
         if m == robot_id:
             continue
         for n in range(len(custom_task_list[m])):
-            buy_id = custom_task_list[m][n][1]#后备任务采购点
-            sell_id = custom_task_list[m][n][2]#后备任务售卖点
-            distance_r2c = 0# 当前机器人到自身售卖点的距离
-            distance_m2c = 0#m号机器人完成自身当前任务所需距离
+            buy_id = custom_task_list[m][n][1]  # 后备任务采购点
+            sell_id = custom_task_list[m][n][2]  # 后备任务售卖点
+            distance_r2c = 0  # 当前机器人到自身售卖点的距离
+            distance_m2c = 0  # m号机器人完成自身当前任务所需距离
 
             if robot_task[m][0] == 0:
-                distance_m2p = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[robot_task[m][1]][1], worker_infos[robot_task[m][1]][2])
+                distance_m2p = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[robot_task[m][1]][1],
+                                           worker_infos[robot_task[m][1]][2])
                 distance_m2c = distance_m2p + distance_graph[robot_task[m][1]][robot_task[m][2]]
             else:
-                distance_m2c = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[robot_task[m][2]][1],  worker_infos[robot_task[m][2]][2])
+                distance_m2c = calDistance(robot_infos[m][7], robot_infos[m][8], worker_infos[robot_task[m][2]][1],
+                                           worker_infos[robot_task[m][2]][2])
 
             if robot_task[robot_id][0] == 0:
                 distance_r2p = calDistance(r_x, r_y, worker_infos[r_buy_id][1], worker_infos[r_buy_id][2])
                 distance_r2c = distance_r2p + distance_graph[r_buy_id][r_sell_id]
             else:
                 distance_r2c = calDistance(r_x, r_y, worker_infos[r_sell_id][1], worker_infos[r_sell_id][2])
-            # print('%d号机器人完成当前任务的距离%f' % (robot_id, distance_r2c), file=F)
-            # print('%d号机器人完成当前任务的距离%f' % (m, distance_m2c), file=F)
             if buy_id == robot_task[robot_id][2] and distance_m2c > distance_r2c:
-                #print('%d号机器人成功抢占%d号机器人的后备任务,卖完了之后顺路做' % (robot_id, m), file=F)
                 task = [0, buy_id, sell_id]
                 custom_task_list[robot_id].insert(0, task)
                 del custom_task_list[m][n]
                 return True
 
     return False
+
 
 # 检测是否需要抢占任务
 # def robExecutingTask(robot_id):
@@ -496,83 +520,35 @@ def robExecutingTask(robot_id):
 
 def generateTogetherTask2(robot_id):
     global time
-    # if time < 2000:
-    #     return
     # 只在去采购的路上顺路做任务
     if robot_task[robot_id][0] != 0:
         return
     if globalIsLoseBalance() and worker_infos[robot_task[robot_id][2]][0] == getMinTypeOf456():
-        #print('456发生失衡,最少类型为%d,%d号机器人不允许接顺风任务' % (getMinType(),robot_id), file=F)
         return
 
     # 遍历生产者列表，找到机器人附近可以顺路做的任务
     for i in range(len(value_producer_list)):
-        level = 2-i
+        level = 2 - i
         for j in range(len(value_producer_list[level])):
-            producer_id = value_producer_list[level][j] # 可用的生产者id
-            product_type = worker_infos[producer_id][0] #生产的物品类型
+            producer_id = value_producer_list[level][j]  # 可用的生产者id
+            product_type = worker_infos[producer_id][0]  # 生产的物品类型
             # 当消费点与机器人当前需要执行的采购任务点非常接近时，说明在完成该消费任务后能顺便继续做采购任务，因此尝试为其寻找适合的采购点
-            distance_r2p = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[producer_id][1], worker_infos[producer_id][2])# 计算机器人到可用生产者的距离
+            distance_r2p = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[producer_id][1],
+                                       worker_infos[producer_id][2])  # 计算机器人到可用生产者的距离
             # 当机器人5米范围内有物品可以送时，判断该物品有没有顺路的消费点，同时付出的代价在阈值之内，选择代价最小的
             if distance_r2p < 12:
                 # 遍历消费者列表找到合适的消费者
                 min_cost = 200
                 min_consumer_id = -1
-                for k in range(len(consumer_list[product_type-1])):
-                    consumer_id = consumer_list[product_type-1][k] #可用的消费点id
-                    if canTogether(robot_id, producer_id, consumer_id) and calCost(robot_id, producer_id, consumer_id) < min_cost:
+                for k in range(len(consumer_list[product_type - 1])):
+                    consumer_id = consumer_list[product_type - 1][k]  # 可用的消费点id
+                    if canTogether(robot_id, producer_id, consumer_id) and calCost(robot_id, producer_id,
+                                                                                   consumer_id) < min_cost:
                         min_cost = calCost(robot_id, producer_id, consumer_id)
                         min_consumer_id = consumer_id
-                # if min_consumer_id == -1:
-                #     for m in range(4):
-                #         for n in range(len(custom_task_list[m])):
-                #             if m == robot_id:
-                #                 continue
-                #             if canTogether(robot_id, producer_id, custom_task_list[m][n][2]) and custom_task_list[m][n][1] == product_type:
-                #                     temp_buy_id = custom_task_list[m][n][1]
-                #                     temp_sell_id = custom_task_list[m][n][2]
-                #                     min_consumer_id = temp_sell_id
-                #                     del custom_task_list[m][n]
-                #                     insertToProducerList(temp_buy_id)
-                #                     consumer_list[product_type-1].append(temp_sell_id)
-                #                     print('发生专属任务抢占',file=F)
-                #                     break
-                # if min_consumer_id == -1:
-                #     for m in range(4):
-                #         if m == robot_id:
-                #             continue
-                #         if  robot_task[m][0] == 0 and canTogether(robot_id, producer_id, robot_task[m][2]) and worker_infos[robot_task[m][1]][0] ==  product_type:
-                #             temp_buy_id = robot_task[m][1]
-                #             temp_sell_id = robot_task[m][2]
-                #             min_consumer_id = temp_sell_id
-                #             robot_task[m][0] = -1
-                #             insertToProducerList(temp_buy_id)
-                #             consumer_list[product_type - 1].append(temp_sell_id)
-                #             # print('发生任务抢占')
-                #             break
-
 
                 if min_consumer_id != -1:
-                    # print('%d工作点符合条件,可以进行任务切换' % (producer_id),file=F)
-                    # print('旧任务为从%d出发运送%d类物品到%d号工作台' % ( robot_task[robot_id][1], worker_infos[robot_task[robot_id][1]][0], robot_task[robot_id][2]), file=F)
-                    # print('新任务为从%d出发运送%d类物品到%d号工作台' % (producer_id,product_type,consumer_id),file=F)
-                    new_task = [0, producer_id, min_consumer_id]# 顺路任务
-                    # 判断此任务所送到的目标是否与专属任务中的任务相冲突
-                    # for m in range(4):
-                    #     # if m <= robot_id:
-                    #     #     continue
-                    #     for n in range(len(custom_task_list[m])):
-                    #         if custom_task_list[m][n][2] == new_task[2] and worker_infos[custom_task_list[m][n][1]][0] ==  product_type:
-                    #             del custom_task_list[m][n]
-                    #             insertToProducerList(custom_task_list[m][n][1])
-                    #             print('发生专属任务抢占')
-                    # for m in range(4):
-                    #     # if m <= robot_id:
-                    #     #     continue
-                    #     if robot_task[m][2] == new_task[2] and worker_infos[robot_task[m][1]][0] ==  product_type:
-                    #         robot_task[m][0] = -1
-                    #         insertToProducerList(robot_task[m][1])
-                    #         print('发生任务抢占')
+                    new_task = [0, producer_id, min_consumer_id]  # 顺路任务
                     task = [0, robot_task[robot_id][1], robot_task[robot_id][2]]
                     robot_task[robot_id][0] = 0
                     robot_task[robot_id][1] = new_task[1]
@@ -583,95 +559,6 @@ def generateTogetherTask2(robot_id):
                     # print(custom_task_list, file=F)
                     return
 
-# 检测是否存在顺路的任务
-# def generateTogetherTask2(robot_id):
-#     global time
-#     # if time < 2000:
-#     #     return
-#     # 只在去采购的路上顺路做任务
-#     if robot_task[robot_id][0] != 0:
-#         return
-#     if globalIsLoseBalance() and worker_infos[robot_task[robot_id][2]][0] == getMinTypeOf456():
-#         #print('456发生失衡,最少类型为%d,%d号机器人不允许接顺风任务' % (getMinType(),robot_id), file=F)
-#         return
-#
-#     # 遍历生产者列表，找到机器人附近可以顺路做的任务
-#     for i in range(len(value_producer_list)):
-#         level = 2-i
-#         for j in range(len(value_producer_list[level])):
-#             producer_id = value_producer_list[level][j] # 可用的生产者id
-#             product_type = worker_infos[producer_id][0] #生产的物品类型
-#             # 当消费点与机器人当前需要执行的采购任务点非常接近时，说明在完成该消费任务后能顺便继续做采购任务，因此尝试为其寻找适合的采购点
-#             distance_r2p = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[producer_id][1], worker_infos[producer_id][2])# 计算机器人到可用生产者的距离
-#             # 当机器人5米范围内有物品可以送时，判断该物品有没有顺路的消费点，同时付出的代价在阈值之内，选择代价最小的
-#             if distance_r2p < 12:
-#                 # 遍历消费者列表找到合适的消费者
-#                 min_cost = 200
-#                 min_consumer_id = -1
-#                 for k in range(len(consumer_list[product_type-1])):
-#                     consumer_id = consumer_list[product_type-1][k] #可用的消费点id
-#                     if canTogether(robot_id, producer_id, consumer_id) and calCost(robot_id, producer_id, consumer_id) < min_cost:
-#                         min_cost = calCost(robot_id, producer_id, consumer_id)
-#                         min_consumer_id = consumer_id
-#                 # if min_consumer_id == -1:
-#                 #     for m in range(4):
-#                 #         for n in range(len(custom_task_list[m])):
-#                 #             if m == robot_id:
-#                 #                 continue
-#                 #             if canTogether(robot_id, producer_id, custom_task_list[m][n][2]) and custom_task_list[m][n][1] == product_type:
-#                 #                     temp_buy_id = custom_task_list[m][n][1]
-#                 #                     temp_sell_id = custom_task_list[m][n][2]
-#                 #                     min_consumer_id = temp_sell_id
-#                 #                     del custom_task_list[m][n]
-#                 #                     insertToProducerList(temp_buy_id)
-#                 #                     consumer_list[product_type-1].append(temp_sell_id)
-#                 #                     print('发生专属任务抢占',file=F)
-#                 #                     break
-#                 # if min_consumer_id == -1:
-#                 #     for m in range(4):
-#                 #         if m == robot_id:
-#                 #             continue
-#                 #         if  robot_task[m][0] == 0 and canTogether(robot_id, producer_id, robot_task[m][2]) and worker_infos[robot_task[m][1]][0] ==  product_type:
-#                 #             temp_buy_id = robot_task[m][1]
-#                 #             temp_sell_id = robot_task[m][2]
-#                 #             min_consumer_id = temp_sell_id
-#                 #             robot_task[m][0] = -1
-#                 #             insertToProducerList(temp_buy_id)
-#                 #             consumer_list[product_type - 1].append(temp_sell_id)
-#                 #             # print('发生任务抢占')
-#                 #             break
-#
-#
-#                 if min_consumer_id != -1:
-#                     # print('%d工作点符合条件,可以进行任务切换' % (producer_id),file=F)
-#                     # print('旧任务为从%d出发运送%d类物品到%d号工作台' % ( robot_task[robot_id][1], worker_infos[robot_task[robot_id][1]][0], robot_task[robot_id][2]), file=F)
-#                     # print('新任务为从%d出发运送%d类物品到%d号工作台' % (producer_id,product_type,consumer_id),file=F)
-#                     new_task = [0, producer_id, min_consumer_id]# 顺路任务
-#                     # 判断此任务所送到的目标是否与专属任务中的任务相冲突
-#                     # for m in range(4):
-#                     #     # if m <= robot_id:
-#                     #     #     continue
-#                     #     for n in range(len(custom_task_list[m])):
-#                     #         if custom_task_list[m][n][2] == new_task[2] and worker_infos[custom_task_list[m][n][1]][0] ==  product_type:
-#                     #             del custom_task_list[m][n]
-#                     #             insertToProducerList(custom_task_list[m][n][1])
-#                     #             print('发生专属任务抢占')
-#                     # for m in range(4):
-#                     #     # if m <= robot_id:
-#                     #     #     continue
-#                     #     if robot_task[m][2] == new_task[2] and worker_infos[robot_task[m][1]][0] ==  product_type:
-#                     #         robot_task[m][0] = -1
-#                     #         insertToProducerList(robot_task[m][1])
-#                     #         print('发生任务抢占')
-#                     task = [0, robot_task[robot_id][1], robot_task[robot_id][2]]
-#                     robot_task[robot_id][0] = 0
-#                     robot_task[robot_id][1] = new_task[1]
-#                     robot_task[robot_id][2] = new_task[2]
-#                     custom_task_list[robot_id].insert(0, task)
-#                     removeProducerFromValueProducerList(producer_id)
-#                     removeConsumerFromConsumerList(min_consumer_id, product_type)
-#                     # print(custom_task_list, file=F)
-#                     return
 
 # 判断场上的456是否发生了失衡
 def globalIsLoseBalance():
@@ -679,11 +566,11 @@ def globalIsLoseBalance():
     n5 = on_producing_record[4] + finished_num[4]
     n6 = on_producing_record[5] + finished_num[5]
     for i in range(len(priority_list)):
-        if isHoldWorkerType(priority_list[i],4):
+        if isHoldWorkerType(priority_list[i], 4):
             n4 = n4 + 1
-        if isHoldWorkerType(priority_list[i],5):
+        if isHoldWorkerType(priority_list[i], 5):
             n5 = n5 + 1
-        if isHoldWorkerType(priority_list[i],6):
+        if isHoldWorkerType(priority_list[i], 6):
             n6 = n6 + 1
 
     num = [n4, n5, n6]
@@ -697,6 +584,8 @@ def globalIsLoseBalance():
     if max_n - min_n >= 1:
         return True
     return False
+
+
 # 工作台是否集齐原材料准备进入生产
 def producerIsReady(worker_id):
     worker_type = worker_infos[worker_id][0]
@@ -705,19 +594,21 @@ def producerIsReady(worker_id):
     holder = numConvertBinaryList(worker_infos[worker_id][4])[::-1]
     holder_num = 0
     for i in range(9):
-        temp_type = i+1
-        if depend_graph[temp_type-1][worker_type - 1] == 1 and holder[temp_type] == '1':
+        temp_type = i + 1
+        if depend_graph[temp_type - 1][worker_type - 1] == 1 and holder[temp_type] == '1':
             holder_num += 1
             continue
         if depend_graph[temp_type - 1][worker_type - 1] == 1 and holder[temp_type] == '0':
             for j in range(4):
-                if robot_task[j][0] != -1 and robot_task[j][2] == worker_id and worker_infos[robot_task[j][1]][0] == temp_type:
+                if robot_task[j][0] != -1 and robot_task[j][2] == worker_id and worker_infos[robot_task[j][1]][
+                    0] == temp_type:
                     holder_num += 1
                     break
             continue
     if holder_num == getNeedProductCount(worker_type):
         return True
     return False
+
 
 # 获取456中数量最少的类型
 def getMinTypeOf456():
@@ -726,39 +617,27 @@ def getMinTypeOf456():
         return -1
     if time > 8000:
         return -1
-    #在产的和完成生产待取走的
+    # 在产的和完成生产待取走的
     n4 = on_producing_record[3] + finished_num[3]
     n5 = on_producing_record[4] + finished_num[4]
     n6 = on_producing_record[5] + finished_num[5]
-    # print('在产的4有%d个' % (on_producing_record[3]), file=F)
-    # print('在产的5有%d个' % (on_producing_record[4]), file=F)
-    # print('在产的6有%d个' % (on_producing_record[5]), file=F)
-    # print('待取走的4有%d个' % (finished_num[3]), file=F)
-    # print('待取走的5有%d个' % (finished_num[4]), file=F)
-    # print('待取走的6有%d个' % (finished_num[5]), file=F)
     # 在路上的(机器人拿着的)
     for i in range(4):
         if robot_task[i][0] == 1 and worker_infos[robot_task[i][1]][0] == 4:
-            # print('机器人手上拿着一个4', file=F)
             n4 = n4 + 1
         if robot_task[i][0] == 1 and worker_infos[robot_task[i][1]][0] == 5:
-            # print('机器人手上拿着一个5', file=F)
             n5 = n5 + 1
         if robot_task[i][0] == 1 and worker_infos[robot_task[i][1]][0] == 6:
-            # print('机器人手上拿着一个6', file=F)
             n6 = n6 + 1
     # 7手上拿着的
     for i in range(worker_num):
         if worker_infos[i][0] != 7:
             continue
         if isHoldWorkerType(i, 4):
-            # print('7手上拿着一个4', file=F)
             n4 = n4 + 1
         if isHoldWorkerType(i, 5):
-            # print('7手上拿着一个5', file=F)
             n5 = n5 + 1
         if isHoldWorkerType(i, 6):
-            # print('7手上拿着一个6', file=F)
             n6 = n6 + 1
     for i in range(worker_num):
         if producerIsReady(i) and worker_infos[i][0] == 4:
@@ -767,9 +646,6 @@ def getMinTypeOf456():
             n5 = n5 + 1
         if producerIsReady(i) and worker_infos[i][0] == 6:
             n6 = n6 + 1
-    # print('4有%d个' % (n4),file=F)
-    # print('5有%d个' % (n5), file=F)
-    # print('6有%d个' % (n6), file=F)
 
     num = [n4, n5, n6]
     min_type = 4
@@ -780,13 +656,14 @@ def getMinTypeOf456():
             max_n = num[i]
         if num[i] < min_n:
             min_n = num[i]
-            min_type = i+4
+            min_type = i + 4
     # 若最大的与最小的数量相等，则说明当前平衡
     if max_n == min_n:
         min_type = 4
     if min_n > 4:
         return -1
     return min_type
+
 
 # 消费consume_type类型物品序号为worker_id的工作台是否已经存在于专属任务序列和执行序列以及消费者队列
 def consumerIsOk(worker_id, consume_type):
@@ -796,7 +673,8 @@ def consumerIsOk(worker_id, consume_type):
             return True
     # 是否存在于执行序列
     for i in range(4):
-        if robot_task[i][0] >= 0 and robot_task[i][2] == worker_id and worker_infos[robot_task[i][1]][0] == consume_type:
+        if robot_task[i][0] >= 0 and robot_task[i][2] == worker_id and worker_infos[robot_task[i][1]][
+            0] == consume_type:
             return True
     # # 是否存在于任务序列
     # for i in range(len(task_list)):
@@ -809,6 +687,7 @@ def consumerIsOk(worker_id, consume_type):
                 return True
 
     return False
+
 
 # 目标工作台原材料是否已经完备
 def isCompeleted(worker_id):
@@ -823,12 +702,13 @@ def isCompeleted(worker_id):
             continue
         if depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '0':
             for i in range(4):
-                if robot_task[i][0] != -1 and worker_infos[robot_task[i][1]][0] == j+1 and robot_task[i][2] == worker_id:
+                if robot_task[i][0] != -1 and worker_infos[robot_task[i][1]][0] == j + 1 and robot_task[i][
+                    2] == worker_id:
                     hold_num = hold_num + 1
                     break
             for i in range(4):
                 for k in range(len(custom_task_list[i])):
-                    if worker_infos[custom_task_list[i][k][1]][0] == j+1 and custom_task_list[i][k][2] == worker_id:
+                    if worker_infos[custom_task_list[i][k][1]][0] == j + 1 and custom_task_list[i][k][2] == worker_id:
                         hold_num = hold_num + 1
                         break
     if hold_num == getNeedProductCount(worker_type):
@@ -848,7 +728,7 @@ def updateInfo():
     roun = int(parts[0])
 
     for i in range(len(finished_num)):
-        finished_num[i] =  0
+        finished_num[i] = 0
 
     # 更新工作台信息
     for i in range(roun):
@@ -859,7 +739,7 @@ def updateInfo():
             initWorkerInfo(line)  # 初始化工作台信息
         else:
             updateWorkerInfo(i, line)  # 更新工作台信息
-    if time > 8000 and haveSeven:
+    if time > 8000 and haveSeven and worker_num == 25:
         token = -1
         root_node.id = -1
 
@@ -888,10 +768,11 @@ def updateInfo():
     # 刷新在产物品数量
     refreshOnProducingNum()
 
+
 # 补充消费者队列
 def complementSeven():
     for i in range(len(priority_list)):
-        #print('7号工作台还有%d帧完成生产' % (worker_infos[priority_list[i]][3]),file=F)
+        # print('7号工作台还有%d帧完成生产' % (worker_infos[priority_list[i]][3]),file=F)
         worker_id = priority_list[i]
         worker_type = 7
         holder = numConvertBinaryList(worker_infos[worker_id][4])[::-1]
@@ -903,21 +784,32 @@ def complementSeven():
                 continue
             if worker_type == 7 and depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '0':
                 for k in range(4):
-                    if robot_task[k][2] == worker_id and worker_infos[robot_task[k][1]][0] == j+1 and calTimeRobot2Target(k,worker_id) < worker_infos[worker_id][3]/50-0.5:
+                    if robot_task[k][2] == worker_id and worker_infos[robot_task[k][1]][
+                        0] == j + 1 and calTimeRobot2Target(k, worker_id) < worker_infos[worker_id][3] / 50 - 0.5:
                         holder_num += 1
                         break
                 continue
-        if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 180:
-            if not consumerIsOk(worker_id,5):
-                consumer_list[4].append(worker_id)
-        if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 230:
-            if not consumerIsOk(worker_id, 6):
-                consumer_list[5].append(worker_id)
+        if worker_num == 25:
+            if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 180:
+                if not consumerIsOk(worker_id, 5):
+                    consumer_list[4].append(worker_id)
+            if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 230:
+                if not consumerIsOk(worker_id, 6):
+                    consumer_list[5].append(worker_id)
 
-        if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 60:
-            if not consumerIsOk(worker_id, 4):
-                consumer_list[3].append(worker_id)
+            if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 60:
+                if not consumerIsOk(worker_id, 4):
+                    consumer_list[3].append(worker_id)
+        elif worker_num == 18:
+            if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 200:
+                if not consumerIsOk(worker_id, 5):
+                    consumer_list[4].append(worker_id)
+                if not consumerIsOk(worker_id, 6):
+                    consumer_list[5].append(worker_id)
 
+            if holder_num == 3 and worker_infos[i][3] >= 0 and worker_infos[i][3] <= 400:
+                if not consumerIsOk(worker_id, 4):
+                    consumer_list[3].append(worker_id)
 
 
 def calDistance(x1, y1, x2, y2):
@@ -928,6 +820,7 @@ def recursive_get(n):
     if n == 0:
         return ""
     return recursive_get(n // 2) + str(n % 2)
+
 
 # 数字转二进制串
 def numConvertBinaryList(num):
@@ -946,13 +839,6 @@ def initInfo():
     # 初始化工作台数量
     worker_num = len(worker_infos)
 
-
-    # # 初始化消费价值权重
-    # consume_value_factor = 40
-    # consume_factor[3] = consume_value_factor/type_num[3]
-    # consume_factor[4] = consume_value_factor/type_num[4]
-    # consume_factor[5] = consume_value_factor/type_num[4]
-
     # 初始化节点距离图
     for i in range(worker_num):
         for j in range(worker_num):
@@ -961,12 +847,11 @@ def initInfo():
             else:
                 distance = calDistance(worker_infos[i][1], worker_infos[i][2], worker_infos[j][1], worker_infos[j][2])
                 distance_graph[i][j] = distance
-    # print(distance_graph,file=F)
 
     if haveSeven:
         for i in range(worker_num):
             if worker_infos[i][0] == 7:
-                #更新中心点
+                # 更新中心点
                 center[0] = worker_infos[i][1]
                 center[1] = worker_infos[i][2]
                 break
@@ -982,21 +867,24 @@ def initInfo():
         if worker_infos[i][0] == 7:
             priority_list.append(i)
 
-    if haveSeven and len(priority_list)>0:
+    if haveSeven and len(priority_list) > 0:
         root_node = buildTreeStructureOf7(priority_list[0])
 
+
 # 计算机器人赶到目标所需的时间
-def calTimeRobot2Target(robot_id,worker_id):
-    distance = calDistance(robot_infos[robot_id][7],robot_infos[robot_id][8],worker_infos[worker_id][1],worker_infos[worker_id][2])
+def calTimeRobot2Target(robot_id, worker_id):
+    distance = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[worker_id][1],
+                           worker_infos[worker_id][2])
     speed = 5
     # 加一秒是增加容错
-    return distance/speed
+    return distance / speed
+
 
 # 刷新消费者队列
 def refreshConsumerList():
     # 遍历所有工作台，更新消费者队列
     for i in range(worker_num):
-        worker_type = worker_infos[i][0] # 工作台类型
+        worker_type = worker_infos[i][0]  # 工作台类型
         # 1，2，3类型的工作台不需要材料，因此没有消费需求
         if worker_type == 1 or worker_type == 2 or worker_type == 3:
             continue
@@ -1009,46 +897,40 @@ def refreshConsumerList():
             # if worker_type == 7 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
             #     3] >= 0 and worker_infos[i][3] <= 150:
             #     consumer_list[j].append(i)
-            if worker_type == 7 and j+1 == 4 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
-                3] >= 0 and worker_infos[i][3] <= 60:
-                consumer_list[j].append(i)
-            if worker_type == 7 and j+1 == 5 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
-                3] >= 0 and worker_infos[i][3] <= 200:
-                consumer_list[j].append(i)
-            if worker_type == 7 and j+1 == 6 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
-                3] >= 0 and worker_infos[i][3] <= 200:
-                consumer_list[j].append(i)
-            # if worker_type == 7 and j+1 == 4 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
-            #     3] >= 0 and worker_infos[i][3] <= 430:
-            #     consumer_list[j].append(i)
-            # 即将进行集齐材料的工作台会马上进入生产状态，它的材料格会被清空
-            # print('当前7号还有%d帧完成生产' %())
-            # if worker_type == 7 and depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '1' and worker_infos[i][5] == 0 and worker_infos[i][3] < 200 and worker_infos[i][3] >0 and (not consumerIsOk(i, j + 1)):
-            #     consumer_list[j].append(i)
-            #     pass
-            # if depend_graph[j][worker_type - 1] == 1 and getNeedProductCount(worker_type) == worker_infos[i][6] and worker_infos[i][5] == 0 and predictSourceClearTime(i)<4 and worker_type == 7 and (not consumerIsOk(i, j + 1)):
-            #     consumer_list[j].append(i)
-        # if
-        #     if depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '1' and (not consumerIsOk(i, j + 1)):
-        #         for k in range(4):
-        #             if robot_task[k][2] == i and robot_task[k][0] == 1 and calTimeRobot2Target(k, i) < 1:
-        #                 consumer_list[j].append(i)
-            # 即将集齐材料的工作台也被视为可消费
-            # 更新工作台持有物品数量
-            # if depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '1':
-            #     worker_infos[i][6] = worker_infos[i][6] + 1
-            #     on_producing_record[worker_type - 1] = on_producing_record[worker_type - 1] + 1
+            if worker_num == 25:
+                if worker_type == 7 and j + 1 == 4 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][
+                    6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
+                    3] >= 0 and worker_infos[i][3] <= 60:
+                    consumer_list[j].append(i)
+                if worker_type == 7 and j + 1 == 5 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][
+                    6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
+                    3] >= 0 and worker_infos[i][3] <= 200:
+                    consumer_list[j].append(i)
+                if worker_type == 7 and j + 1 == 6 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][
+                    6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
+                    3] >= 0 and worker_infos[i][3] <= 200:
+                    consumer_list[j].append(i)
+            elif worker_infos == 18:
+                if worker_type == 7 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][6] == 3 and (
+                        not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
+                    3] >= 0 and worker_infos[i][3] <= 200:
+                    consumer_list[j].append(i)
+                if worker_type == 7 and j + 1 == 4 and depend_graph[j][worker_type - 1] == 1 and worker_infos[i][
+                    6] == 3 and (not consumerIsOk(i, j + 1)) and worker_infos[i][5] == 0 and worker_infos[i][
+                    3] >= 0 and worker_infos[i][3] <= 400:
+                    consumer_list[j].append(i)
+
 
 # 预判材料格剩余清空时间
 def predictSourceClearTime(worker_id):
     worker_type = worker_infos[worker_id][0]  # 工作台类型
-    need_time = 0# 剩余清空时间
+    need_time = 0  # 剩余清空时间
     # 1，2，3类型的工作台不需要材料，因此没有消费需求
     if worker_type == 1 or worker_type == 2 or worker_type == 3:
         return need_time
     # 如果工作台现在持有所有所需材料且当前未持有产物时，剩余的清空时间就是该工作台完成当前生产的时间
     if getNeedProductCount(worker_type) == worker_infos[worker_id][6] and worker_infos[worker_id][5] == 0:
-        time = worker_infos[worker_id][3]/50
+        time = worker_infos[worker_id][3] / 50
         return time
 
     # 如果工作台现在持有所有所需材料且当前持有产物时，剩余的清空时间就是该工作台产物被取走的时间
@@ -1065,6 +947,7 @@ def predictSourceClearTime(worker_id):
     #     # 即将进行集齐材料的工作台会马上进入生产状态，它的材料格会被清空
     #     if depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '1' and (not consumerIsOk(i, j + 1)):
     #         pass
+
 
 # 刷新当前场上在产物品数
 def refreshOnProducingNum():
@@ -1119,18 +1002,19 @@ def getNeedProductNumWithoutAssigned(worker_id):
             continue
     return num
 
+
 # 获取需要worker_type类型物品工作台中在产以及已经完成生产的数量最小的类型
 def getMinTypeNeeded(worker_id):
     # 获取需要worker_type类型物品工作台中在产以及已经完成生产的数量最小的类型
-    worker_type = worker_infos[worker_id][0]# worker_id对应的工作台类型
+    worker_type = worker_infos[worker_id][0]  # worker_id对应的工作台类型
     # 只考虑123到456的依赖情况
     if worker_type > 3:
         return -1
-    min_value = 100 #场上需要worker_type类型物品的工作台类型中最少的值
-    min_type = -1#场上需要worker_type类型物品的工作台类型
+    min_value = 100  # 场上需要worker_type类型物品的工作台类型中最少的值
+    min_type = -1  # 场上需要worker_type类型物品的工作台类型
     for i in range(9):
         if depend_graph[worker_type - 1][i] == 1:
-            temp_worker_type = i + 1 #可以接收worker_id的类型
+            temp_worker_type = i + 1  # 可以接收worker_id的类型
             # 只考虑123到456的依赖情况
             if temp_worker_type >= 7:
                 if min_type == -1:
@@ -1146,14 +1030,15 @@ def getMinTypeNeeded(worker_id):
             # print('已经完成生产的%d类物品有%d个' % (temp_worker_type,finished_num[temp_worker_type - 1]),file=F)
             # 统计该类型物品已经被取走送往卖点的数量
             for k in range(4):
-                if robot_task[k][0] != -1 and worker_infos[robot_task[k][1]][0] == worker_type and worker_infos[robot_task[k][2]][0] == temp_worker_type:
+                if robot_task[k][0] != -1 and worker_infos[robot_task[k][1]][0] == worker_type and \
+                        worker_infos[robot_task[k][2]][0] == temp_worker_type:
                     num = num + 1
                 if robot_task[k][0] == 1 and worker_infos[robot_task[k][1]][0] == temp_worker_type:
                     num = num + 1
             # print('正在运送%d类物品到%d类工作台的数量有%d个' % (worker_type,temp_worker_type, num - finished_num[temp_worker_type - 1]- on_producing_record[temp_worker_type - 1]) , file=F)
             # 统计该类型工作台所需所有原材料都已经完成任务分配的元素数量
             for j in range(worker_num):
-                if temp_worker_type == worker_infos[j][0] and isHoldWorkerType(j,worker_type):
+                if temp_worker_type == worker_infos[j][0] and isHoldWorkerType(j, worker_type):
                     num = num + 1
                 if 7 == worker_infos[j][0] and isHoldWorkerType(j, temp_worker_type):
                     num = num + 1
@@ -1161,13 +1046,14 @@ def getMinTypeNeeded(worker_id):
             if num < min_value:
                 min_value = num
                 min_type = temp_worker_type
-    #print('*****************************************', file=F)
+    # print('*****************************************', file=F)
     # print('%d类型的物品正在匹配消费者，当前场上最少的物品类型是%d，有%d个' % (worker_type,min_type,min_value),file=F)
 
-    #确保不会因为4，5，6数量过多而过于离散
+    # 确保不会因为4，5，6数量过多而过于离散
     if min_value > 4:
         min_type = -1
     return min_type
+
 
 # 计算需要worker_type物品中数量最少的类型
 def getMinTypeNeeded2(worker_type):
@@ -1210,21 +1096,22 @@ def getMinTypeNeeded2(worker_type):
                 min_value = num
                 min_type = temp_worker_type
 
-    #确保不会因为4，5，6数量过多而过于离散
+    # 确保不会因为4，5，6数量过多而过于离散
     if min_value > 4:
         min_type = -1
     return min_type
+
 
 # 获取需要worker_type类型物品工作台中在产以及已经完成生产的数量最小的类型的数量
 def getMinTypeNumNeededOfType(worker_type):
     # 只考虑123到456的依赖情况
     if worker_type > 3:
         return -1
-    min_value = 999 #场上需要worker_type类型物品的工作台类型中最少的值
-    min_type = -1#场上需要worker_type类型物品的工作台类型
+    min_value = 999  # 场上需要worker_type类型物品的工作台类型中最少的值
+    min_type = -1  # 场上需要worker_type类型物品的工作台类型
     for i in range(9):
         if depend_graph[worker_type - 1][i] == 1:
-            temp_worker_type = i + 1 #可以接收worker_id的类型
+            temp_worker_type = i + 1  # 可以接收worker_id的类型
             # 只考虑123到456的依赖情况
             if temp_worker_type >= 7:
                 if min_type == -1:
@@ -1237,14 +1124,16 @@ def getMinTypeNumNeededOfType(worker_type):
             num = num + finished_num[temp_worker_type - 1]
             for k in range(4):
                 # 统计运送worker_type类型物品到temp_worker_type类型工作台的正在执行的任务的数量
-                if robot_task[k][0] != -1 and worker_infos[robot_task[k][1]][0] == worker_type and worker_infos[robot_task[k][2]][0] == temp_worker_type:
+                if robot_task[k][0] != -1 and worker_infos[robot_task[k][1]][0] == worker_type and \
+                        worker_infos[robot_task[k][2]][0] == temp_worker_type:
                     num = num + 1
                 # 统计该类型物品已经被取走送往卖点的数量
                 if robot_task[k][0] == 1 and worker_infos[robot_task[k][1]][0] == temp_worker_type:
                     num = num + 1
                 # 统计运送worker_type类型物品到temp_worker_type类型工作台的任务的专属任务的数量
                 for t in range(len(custom_task_list[k])):
-                    if worker_infos[custom_task_list[k][t][1]][0] == worker_type and worker_infos[custom_task_list[k][t][2]][0] == temp_worker_type:
+                    if worker_infos[custom_task_list[k][t][1]][0] == worker_type and \
+                            worker_infos[custom_task_list[k][t][2]][0] == temp_worker_type:
                         num = num + 1
             for j in range(worker_num):
                 # 统计456手中持有的worker_type类型物品的数量
@@ -1253,27 +1142,30 @@ def getMinTypeNumNeededOfType(worker_type):
                 # 统计7手中持有的temp_worker_type类型物品的数量
                 if 7 == worker_infos[j][0] and isHoldWorkerType(j, temp_worker_type):
                     num = num + 1
-            #print('%d类型工作台有%d个%d' % (temp_worker_type,num,worker_type),file=F)
+            # print('%d类型工作台有%d个%d' % (temp_worker_type,num,worker_type),file=F)
             if num < min_value:
                 min_value = num
                 min_type = temp_worker_type
     return min_value
 
-#获取目标类型最迫切需要的材料
+
+# 获取目标类型最迫切需要的材料
 def getWantedProductOfWorkerType(worker_type):
-    product_num = []#worker_type所持有的各类型的材料总数
+    product_num = []  # worker_type所持有的各类型的材料总数
     for i in range(9):
         need_type = i + 1
-        num = [need_type,0]
-        if depend_graph[i][worker_type-1] == 1:
+        num = [need_type, 0]
+        if depend_graph[i][worker_type - 1] == 1:
             for j in range(worker_num):
-                if worker_infos[j][0] == worker_type and isHoldWorkerType(j,need_type):
+                if worker_infos[j][0] == worker_type and isHoldWorkerType(j, need_type):
                     num[1] += 1
             for j in range(4):
-                if robot_task[j][0] != -1 and worker_infos[robot_task[j][1]][0] == need_type and worker_infos[robot_task[j][2]][0] == worker_type:
+                if robot_task[j][0] != -1 and worker_infos[robot_task[j][1]][0] == need_type and \
+                        worker_infos[robot_task[j][2]][0] == worker_type:
                     num[1] += 1
                 for t in range(len(custom_task_list[j])):
-                    if worker_infos[custom_task_list[j][t][1]][0] == need_type and worker_infos[custom_task_list[j][t][2]][0] == worker_type:
+                    if worker_infos[custom_task_list[j][t][1]][0] == need_type and \
+                            worker_infos[custom_task_list[j][t][2]][0] == worker_type:
                         num[1] += 1
             product_num.append(num)
     min_value = 999
@@ -1283,7 +1175,6 @@ def getWantedProductOfWorkerType(worker_type):
             min_type = product_num[i][0]
             min_value = product_num[i][1]
     return min_type
-
 
     holder = numConvertBinaryList(worker_infos[worker_id][4])[::-1]
     if depend_graph[product_type - 1][worker_type - 1] == 0:
@@ -1295,36 +1186,35 @@ def getWantedProductOfWorkerType(worker_type):
 
 def generateTaskRealTime(robot_id):
     global time
-    task = [-1, -1] #0:采购点id，售卖点id
+    task = [-1, -1]  # 0:采购点id，售卖点id
     for i in range(3):
-        prior_type = -1#优先运送的类型
+        prior_type = -1  # 优先运送的类型
         num = 100
         if i == 2:
             min_type_456 = getMinTypeOf456()
-            #print('数量最少的类型为%d' % (min_type_456), file=F)
             if min_type_456 != -1:
                 prior_type = getWantedProductOfWorkerType(min_type_456)
-                #print('本次优先选择的买点类型为%d' % (prior_type), file=F)
 
-        producerList = [] # 对生产者价值队列进行排序
+        producerList = []  # 对生产者价值队列进行排序
         # 针对机器人当前位置对i级销售者价值队列进行权重排序
         for j in range(len(value_producer_list[i])):
-            temp_buy_id = value_producer_list[i][j] # 可用的买点id
+            temp_buy_id = value_producer_list[i][j]  # 可用的买点id
             temp_buy_type = worker_infos[temp_buy_id][0]  # 买点类型
-            robot_x = robot_infos[robot_id][7] # 机器人x坐标
-            robot_y = robot_infos[robot_id][8] # 机器人y坐标
-            buy_x = worker_infos[temp_buy_id][1] # 买点x坐标
-            buy_y = worker_infos[temp_buy_id][2] # 买点y坐标
-            distance_r2p = calDistance(robot_x, robot_y, buy_x, buy_y) # 计算机器人和购买点的距离
-            distance_p2center = calDistance(center[0], center[1], worker_infos[temp_buy_id][1], worker_infos[temp_buy_id][2])# 计算买点离中心点的距离
-            weight_r2p = distance_r2p * 0.7 + distance_p2center * 0 # 计算综合权值，越小的优先级越大
+            robot_x = robot_infos[robot_id][7]  # 机器人x坐标
+            robot_y = robot_infos[robot_id][8]  # 机器人y坐标
+            buy_x = worker_infos[temp_buy_id][1]  # 买点x坐标
+            buy_y = worker_infos[temp_buy_id][2]  # 买点y坐标
+            distance_r2p = calDistance(robot_x, robot_y, buy_x, buy_y)  # 计算机器人和购买点的距离
+            distance_p2center = calDistance(center[0], center[1], worker_infos[temp_buy_id][1],
+                                            worker_infos[temp_buy_id][2])  # 计算买点离中心点的距离
+            weight_r2p = distance_r2p * 0.7 + distance_p2center * 0  # 计算综合权值，越小的优先级越大
             # 对于456类型的工作台来说，如果自身类型是root_node7类工作台所需的，则需要优先安排
-            if i == 1 and haveSeven and isLackProductType(root_node.id,temp_buy_type):
-                weight_r2p = weight_r2p*0.5
+            if i == 1 and haveSeven and isLackProductType(root_node.id, temp_buy_type):
+                weight_r2p = weight_r2p * 0.5
             # 对于123类型的工作台来说，如果自身类型是全局456中类型数量最少的工作台所需的，则需要优先安排
             if i == 2 and prior_type == temp_buy_type:
                 weight_r2p = weight_r2p * 0.2
-            producer = [weight_r2p, temp_buy_id]# 用于插入到producerList,后面与消费者列表进行综合配对选择
+            producer = [weight_r2p, temp_buy_id]  # 用于插入到producerList,后面与消费者列表进行综合配对选择
             # 将生产者工作台按权值进行排序(升序)
             if len(producerList) == 0:
                 producerList.append(producer)
@@ -1336,17 +1226,17 @@ def generateTaskRealTime(robot_id):
 
         # 遍历排好序的生产者列表，从权值小的开始寻找最适配的卖点，直到找到配对的
         for m in range(len(producerList)):
-            buy_id = producerList[m][1] # 买点id
+            buy_id = producerList[m][1]  # 买点id
             buy_type = worker_infos[buy_id][0]  # 要购买的类型
             min_weight_p2c = 999  # 机器人到购买点的最小权值
-            sell_id = -1 # 卖点id，值为-1时视为未找到与买点适配的卖点
-            min_consumer_type = getMinTypeOf456() # 当前场上需要buy_type类型物品的工作台中，数量最少的类型
+            sell_id = -1  # 卖点id，值为-1时视为未找到与买点适配的卖点
+            min_consumer_type = getMinTypeOf456()  # 当前场上需要buy_type类型物品的工作台中，数量最少的类型
             # 根据找到的购买点为其寻找最合适的出售点
             for j in range(len(consumer_list[buy_type - 1])):
-                temp_sell_id = consumer_list[buy_type - 1][j]# 可用的卖点
-                temp_sell_type = worker_infos[temp_sell_id][0]# 卖点的类型
-                distance_p2c = distance_graph[buy_id][temp_sell_id]# 计算买点到可用卖点的距离
-                holder_num = worker_infos[temp_sell_id][6]# 目标销售点持有物品数量
+                temp_sell_id = consumer_list[buy_type - 1][j]  # 可用的卖点
+                temp_sell_type = worker_infos[temp_sell_id][0]  # 卖点的类型
+                distance_p2c = distance_graph[buy_id][temp_sell_id]  # 计算买点到可用卖点的距离
+                holder_num = worker_infos[temp_sell_id][6]  # 目标销售点持有物品数量
                 # 物品在运送途中的也被视为其拥有的
                 for n in range(4):
                     if robot_task[n][0] != -1 and robot_task[n][2] == temp_sell_id:
@@ -1354,13 +1244,13 @@ def generateTaskRealTime(robot_id):
                     for p in range(len(custom_task_list[n])):
                         if custom_task_list[n][p][2] == temp_sell_id:
                             holder_num = holder_num + 1
-                # if time >8000 and temp_sell_type == 5:
-                #     continue
-                # if time >8000 and temp_sell_type == 6:
-                #     continue
-                distance_c2center = calDistance(center[0], center[1], worker_infos[temp_sell_id][1],worker_infos[temp_sell_id][2])# 计算可用卖点到中心点的距离
+                if time > 7800 and temp_sell_type == 4 and worker_num == 18:
+                    continue
+                distance_c2center = calDistance(center[0], center[1], worker_infos[temp_sell_id][1],
+                                                worker_infos[temp_sell_id][2])  # 计算可用卖点到中心点的距离
                 # 计算中心点权值
-                weight_p2c = distance_p2c * 1 + distance_c2center * 0.3 + (getNeedProductCount(temp_sell_type)-holder_num)*10
+                weight_p2c = distance_p2c * 1 + distance_c2center * 0.3 + (
+                            getNeedProductCount(temp_sell_type) - holder_num) * 10
                 # 出于均衡，对于最少的类型我们提升其权重
                 if min_consumer_type == temp_sell_type:
                     weight_p2c = weight_p2c * 0.1
@@ -1372,26 +1262,23 @@ def generateTaskRealTime(robot_id):
                     min_weight_p2c = weight_p2c
                     sell_id = temp_sell_id
             # 最后1000帧开始判断任务是否可执行完，对于无法完成的任务不与分配
-            if time > 8000 and (not canFinish(robot_id,buy_id,sell_id)):
+            if time > 8000 and (not canFinish(robot_id, buy_id, sell_id)):
                 continue
-            # # 避免生成的任务已经存在于专属队列中了
-            # if taskIsExistInCustomTaskList(buy_id,sell_id):
-            #     continue
             # 未找到合适的售卖工作台
             if sell_id == -1:
                 continue
             else:
-                #生成任务
+                # 生成任务
                 task[0] = buy_id
                 task[1] = sell_id
                 removeProducerFromValueProducerList(buy_id)
-                removeConsumerFromConsumerList(sell_id,buy_type)
-                #print('为%d号机器人生成实时任务从%d运输%d类物品到%d号工作台，目标工作台类型为%d' % (robot_id,buy_id,worker_infos[buy_id][0],sell_id,worker_infos[sell_id][0]), file=F)
+                removeConsumerFromConsumerList(sell_id, buy_type)
                 return task
     return task
 
+
 def generateTaskRealTime2(robot_id):
-    task = [-1, -1] #0:采购点id，售卖点id
+    task = [-1, -1]  # 0:采购点id，售卖点id
     producerList = []
     robot_x = robot_infos[robot_id][7]  # 机器人x坐标
     robot_y = robot_infos[robot_id][8]  # 机器人y坐标
@@ -1409,28 +1296,29 @@ def generateTaskRealTime2(robot_id):
         buy_id = producerList[i][1]  # 买点id
         buy_type = worker_infos[buy_id][0]  # 要购买的类型
         distance_r2p = producerList[i][0]
-        task_profit = profit[buy_type-1]#任务利润
+        task_profit = profit[buy_type - 1]  # 任务利润
         for j in range(len(consumer_list[buy_type - 1])):
             temp_sell_id = consumer_list[buy_type - 1][j]  # 可用的卖点
             temp_sell_type = worker_infos[temp_sell_id][0]  # 卖点的类型
             distance_p2c = distance_graph[buy_id][temp_sell_id]  # 计算买点到可用卖点的距离
             holder_num = worker_infos[temp_sell_id][6]  # 目标销售点持有物品数量
-            #task_profit += holder_num * 250
+            # task_profit += holder_num * 250
             # distance_c2center = calDistance(center[0], center[1], worker_infos[temp_sell_id][1],worker_infos[temp_sell_id][2])  # 计算可用卖点到中心点的距离
             # if distance_c2center != 0:
             #     task_profit += 1000 / distance_c2center
             meter_wage = task_profit / (distance_r2p + distance_p2c)
-            if time > 8000 and (not canFinish(robot_id,buy_id,temp_sell_id)):
+            if time > 8000 and (not canFinish(robot_id, buy_id, temp_sell_id)):
                 continue
             if meter_wage > max_meter_wage:
                 max_meter_wage = meter_wage
                 task[0] = buy_id
                 task[1] = temp_sell_id
-    if max_meter_wage >0 and task[0]!= -1 and task[1] !=-1:
+    if max_meter_wage > 0 and task[0] != -1 and task[1] != -1:
         removeProducerFromValueProducerList(task[0])
         removeConsumerFromConsumerList(task[1], worker_infos[task[0]][0])
 
     return task
+
 
 # 生成指令
 def instruct(robot_id):
@@ -1441,18 +1329,19 @@ def instruct(robot_id):
     elif task_type == 1:
         target_id = robot_task[robot_id][2]
     # 生成指令
-
-    # 图二
     if worker_num == 25:
-        physics.doInstruct(robot_id, robot_infos[robot_id][0], robot_infos[robot_id][6],
-                           robot_infos[robot_id][7], robot_infos[robot_id][8], robot_infos[robot_id][4],
-                           robot_infos[robot_id][9], robot_infos[robot_id][10], target_id, worker_infos[target_id][1],
-                           worker_infos[target_id][2], task_type, robot_infos, worker_num)
-    # 图四
+        physics2.doInstruct(robot_id, robot_infos[robot_id][0], robot_infos[robot_id][6],
+                            robot_infos[robot_id][7], robot_infos[robot_id][8], robot_infos[robot_id][4],
+                            robot_infos[robot_id][9], robot_infos[robot_id][10], target_id, worker_infos[target_id][1],
+                            worker_infos[target_id][2], task_type, robot_infos, worker_num)
     elif worker_num == 18:
-        physics.doInstruct(robot_id, robot_infos[robot_id][0], robot_infos[robot_id][6],
-               robot_infos[robot_id][7], robot_infos[robot_id][8], target_id, worker_infos[target_id][1],
-               worker_infos[target_id][2], task_type)
+        physics4.doInstruct(robot_id, robot_infos[robot_id][0], robot_infos[robot_id][6],
+                            robot_infos[robot_id][7], robot_infos[robot_id][8], target_id, worker_infos[target_id][1],
+                            worker_infos[target_id][2], task_type)
+
+    #
+    #     def doInstruct(robot_id, plat_id,  direction, robot_x, robot_y, target_id, target_x, target_y,
+    #                    task_type):
 
 
 def standardization(angle):
@@ -1519,17 +1408,20 @@ def CheckCrush(robot1_id, robot1_direction, robot1_x, robot1_y, robot1_Vx, robot
         #             sys.stdout.write('rotate %d %f\n' % (robot1_id, -math.pi))
         #             sys.stdout.write('forward %d %d\n' % (robot1_id, 0))
     # if Rdistance < 2 and abs(betweenRobotAngle) < math.pi/9 and abs(standardization(robot1_direction-line_angle))>math.pi/1.1:
-        # sys.stdout.write('forward %d %d\n' % (robot1_id, robot2_V/1.1))
+    # sys.stdout.write('forward %d %d\n' % (robot1_id, robot2_V/1.1))
+
+
 #
 # 判断任务是否可以在结束前完成
-def canFinish(robot_id,buy_id,sell_id):
-    distance_b2s = distance_graph[buy_id][sell_id]# 买点和卖点的距离
-    distance_r2b = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[buy_id][1], worker_infos[buy_id][2])# 机器人和买点的距离
-    leave_time = (9000 - time)/50 # 计算剩余时间(秒)
-    redundance = 1# 冗余时间,增加容错
-    avg_time = 5.5# 平均行驶速度
-    distance = distance_b2s +distance_r2b
-    if (distance/avg_time + redundance) < leave_time:
+def canFinish(robot_id, buy_id, sell_id):
+    distance_b2s = distance_graph[buy_id][sell_id]  # 买点和卖点的距离
+    distance_r2b = calDistance(robot_infos[robot_id][7], robot_infos[robot_id][8], worker_infos[buy_id][1],
+                               worker_infos[buy_id][2])  # 机器人和买点的距离
+    leave_time = (9000 - time) / 50  # 计算剩余时间(秒)
+    redundance = 1  # 冗余时间,增加容错
+    avg_time = 5.5  # 平均行驶速度
+    distance = distance_b2s + distance_r2b
+    if (distance / avg_time + redundance) < leave_time:
         return True
     else:
         return False
@@ -1556,6 +1448,7 @@ def updateRobotTask():
     for i in range(4):
         updateRobotTaskInfo(i)
 
+
 # 任务执行
 def exec():
     for i in range(4):
@@ -1567,9 +1460,12 @@ def exec():
             #     sys.stdout.write('forward %d %d\n' % (i, 2))
         else:
             instruct(i)
-            # for j in range(4):
-            #     CheckCrush(i, robot_infos[i][6], robot_infos[i][7], robot_infos[i][8], robot_infos[i][9], robot_infos[i][10],
-            #                j, robot_infos[j][6], robot_infos[j][7], robot_infos[j][8], robot_infos[j][9], robot_infos[j][10])
+            if worker_num == 18:
+                for j in range(4):
+                    CheckCrush(i, robot_infos[i][6], robot_infos[i][7], robot_infos[i][8], robot_infos[i][9],
+                               robot_infos[i][10],
+                               j, robot_infos[j][6], robot_infos[j][7], robot_infos[j][8], robot_infos[j][9],
+                               robot_infos[j][10])
 
 
 # 为机器人分派任务并执行操作
@@ -1619,8 +1515,6 @@ def isLackProductType(worker_id, product_type):
     return True
 
 
-
-
 # 为指定工作台生成任务
 def generateTaskForWorker(worker_id):
     worker_type = worker_infos[worker_id][0]
@@ -1630,7 +1524,7 @@ def generateTaskForWorker(worker_id):
         # 如果目前工作台未持有该原材料，且没有相应的任务或在执行任务则生成对应的任务
         if depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '0' and consumerIsExistInTaskList(worker_id,
                                                                                                         worker_type) and consumerIsExistInRobotList(
-                worker_id, worker_type):
+            worker_id, worker_type):
             pass
 
 
@@ -1642,12 +1536,14 @@ def getNeedProductCount(worker_type):
             count = count + 1
     return count
 
+
 # 任务列表中是否存在出售点为worker_id，且出售类型为worker_type的任务
 def consumerIsExistInTaskList(worker_id, worker_type):
     for i in range(len(task_list)):
         if task_list[i][2] == worker_id and worker_infos[task_list[i][1]][0] == worker_type:
             return True
     return False
+
 
 def getIndexOfTask(worker_id, worker_type):
     for i in range(len(task_list)):
@@ -1663,12 +1559,14 @@ def consumerIsExistInRobotList(worker_id, worker_type):
             return True
     return False
 
+
 # 执行列表中是否存在出售点为worker_id，且出售类型为worker_type的任务
 def producerIsExistInRobotList(worker_id):
     for i in range(4):
         if robot_task[i][1] == worker_id and robot_task[i][0] == 0:
             return True
     return False
+
 
 # 执行列表中是否存在出售点为worker_id，且出售类型为worker_type的任务
 def producerIsExistInCustomTaskList(worker_id):
@@ -1677,6 +1575,7 @@ def producerIsExistInCustomTaskList(worker_id):
             if custom_task_list[i][j][1] == worker_id:
                 return True
     return False
+
 
 # 执行列表中是否存在出售点为worker_id
 def producerIsExistInValueList(worker_id):
@@ -1695,6 +1594,7 @@ def producerIsExistInValueList(worker_id):
                 return True
     return False
 
+
 # 专属执行列表中是否存在出售点为worker_id，且出售类型为worker_type的任务
 def consumerIsExistInCustomList(worker_id, worker_type):
     for i in range(4):
@@ -1702,7 +1602,6 @@ def consumerIsExistInCustomList(worker_id, worker_type):
             if custom_task_list[i][j][2] == worker_id and worker_infos[custom_task_list[i][j][1]][0] == worker_type:
                 return True
     return False
-
 
 
 # 将任务分配给最合适的机器人专属任务队列
@@ -1721,6 +1620,7 @@ def addToCustomTaskList(task):
     custom_task_list[custom_robot_id].append(task)
     custom_robot_id = (custom_robot_id + 1) % 4
 
+
 # 只适用于7类工作台
 def intervene():
     for i in range(len(priority_list)):
@@ -1730,10 +1630,10 @@ def intervene():
             # 找到当前7类工作台所需要的材料类型
             worker_type = getLackedProductForWorkerId(worker_id)[0]
             # 判断该类型是否存在对应的执行任务
-            if consumerIsExistInRobotList(worker_id,worker_type):
+            if consumerIsExistInRobotList(worker_id, worker_type):
                 return
             # 判断该类型是否存在对应的专属任务
-            if consumerIsExistInCustomList(worker_id,worker_type):
+            if consumerIsExistInCustomList(worker_id, worker_type):
                 return
             # 生成一个对应的任务进行处理
             min_distance = 100
@@ -1746,15 +1646,16 @@ def intervene():
                     sell_y = worker_infos[worker_id][2]
                     buy_x = worker_infos[temp_worker_id][1]
                     buy_y = worker_infos[temp_worker_id][2]
-                    distance = calDistance(buy_x,buy_y,sell_x,sell_y)
+                    distance = calDistance(buy_x, buy_y, sell_x, sell_y)
                     if temp_worker_type == worker_type and distance < min_distance:
                         min_distance = distance
                         min_id = temp_worker_id
             if min_id != -1:
                 task = [0, min_id, worker_id]
                 addToCustomTaskList(task)
-                consumer_list[worker_infos[min_id][0]-1].remove(worker_id)
+                consumer_list[worker_infos[min_id][0] - 1].remove(worker_id)
                 value_producer_list[1].remove(min_id)
+
 
 # 获取目标工作台还未放入材料格的原材料类型
 def getLackedProductForWorkerId(worker_id):
@@ -1768,21 +1669,23 @@ def getLackedProductForWorkerId(worker_id):
     for j in range(9):
         # 如果目前工作台未持有该原材料，且没有相应的任务或在执行任务则生成对应的任务
         if depend_graph[j][worker_type - 1] == 1 and holder[j + 1] == '0':
-            result.append(j+1)
+            result.append(j + 1)
 
     return result
+
 
 # 建立从7开始自顶向下的依赖树结构
 def buildTreeStructureOf7(worker_id):
     worker_type = worker_infos[worker_id][0]
-    father = Node(worker_id,worker_type,0)
+    father = Node(worker_id, worker_type, 0)
     for i in range(9):
-        if depend_graph[i][worker_type-1] == 1:
-            son_type = i + 1 #子节点的工作台类型
-            son_id = findNearestWokerForType(worker_id,son_type) #找到son_type类型离worker_id最近的工作台
+        if depend_graph[i][worker_type - 1] == 1:
+            son_type = i + 1  # 子节点的工作台类型
+            son_id = findNearestWokerForType(worker_id, son_type)  # 找到son_type类型离worker_id最近的工作台
             node = buildTreeStructureOf7(son_id)
             father.addSon(node)
     return father
+
 
 # 根据树结构生成任务(同一时间只能有一层的任务)
 def generateTreeTask(node):
@@ -1790,9 +1693,9 @@ def generateTreeTask(node):
     sell_id = node.id
     for i in range(node.son_num):
         # 如果需要的子工作台还未准备好物品，同时自身也没有这类物品则先准备子工作台的物品
-        #if (not producerIsExistInValueList(node.sons[i].id)) and (not isHoldWorkerType(sell_id,node.sons[i].type)):
+        # if (not producerIsExistInValueList(node.sons[i].id)) and (not isHoldWorkerType(sell_id,node.sons[i].type)):
         # 工作台是否准备好消费目标类型的物品
-        if (not consumerIsExistInConsumerList(sell_id,node.sons[i].type)):
+        if (not consumerIsExistInConsumerList(sell_id, node.sons[i].type)):
             continue
         if (not producerIsExistInValueList(node.sons[i].id)):
             # allReady = False
@@ -1810,7 +1713,7 @@ def generateTreeTask(node):
             task = [0, buy_id, sell_id]
             # print('生成了从%d运送%d类物品到%d的专属任务专属' % (buy_id, buy_type, sell_id), file=F)
             removeProducerFromValueProducerList(buy_id)
-            removeConsumerFromConsumerList(sell_id,buy_type)
+            removeConsumerFromConsumerList(sell_id, buy_type)
             addToCustomTaskList(task)
 
 
@@ -1836,9 +1739,9 @@ def removeProducerFromValueProducerList(worker_id):
 
 
 # 从消费者队列中删除元素
-def removeConsumerFromConsumerList(sell_id,consume_type):
-    #8类和9类属于无限消费资源
-    if worker_infos[sell_id][0]==8 or worker_infos[sell_id][0]==9:
+def removeConsumerFromConsumerList(sell_id, consume_type):
+    # 8类和9类属于无限消费资源
+    if worker_infos[sell_id][0] == 8 or worker_infos[sell_id][0] == 9:
         return
     consumer_list[consume_type - 1].remove(sell_id)
     # for i in range(len(consumer_list[consume_type-1])):
@@ -1847,12 +1750,14 @@ def removeConsumerFromConsumerList(sell_id,consume_type):
     #         consumer_list[consume_type - 1].remove(sell_id)
     #         return
 
-def consumerIsExistInConsumerList(worker_id,consume_type):
-    for i in range(len(consumer_list[consume_type-1])):
-        temp_sell_id = consumer_list[consume_type-1][i]
+
+def consumerIsExistInConsumerList(worker_id, consume_type):
+    for i in range(len(consumer_list[consume_type - 1])):
+        temp_sell_id = consumer_list[consume_type - 1][i]
         if temp_sell_id == worker_id:
             return True
     return False
+
 
 # 判断目标worker_id是否存在于生产者队列者队列，即目标物品是否完成生产
 def producerIsExistInValueList(worker_id):
@@ -1869,8 +1774,9 @@ def producerIsExistInValueList(worker_id):
             return True
     return False
 
+
 # 目标任务是否存在于专属任务列中了
-def taskIsExistInCustomTaskList(buy_id,sell_id):
+def taskIsExistInCustomTaskList(buy_id, sell_id):
     # print('buy_id=%d' % (buy_id),file=F)
     # print('sell_id=%d' % (sell_id), file=F)
     for i in range(4):
@@ -1879,16 +1785,18 @@ def taskIsExistInCustomTaskList(buy_id,sell_id):
                 return True
     return False
 
+
 # 目标任务是否正在执行中
-def taskIsInExecuting(buy_id,sell_id):
+def taskIsInExecuting(buy_id, sell_id):
     for i in range(4):
         robot_phase = robot_task[i][0]
         if robot_phase != -1 and robot_task[i][1] == buy_id and robot_task[i][2] == sell_id:
             return True
     return False
 
+
 # 判断worker_id是否持有worker_type类型的物品
-def isHoldWorkerType(worker_id,product_type):
+def isHoldWorkerType(worker_id, product_type):
     worker_type = worker_infos[worker_id][0]
     holder = numConvertBinaryList(worker_infos[worker_id][4])[::-1]
     # 没有依赖关系自然不会有持有
@@ -1898,8 +1806,9 @@ def isHoldWorkerType(worker_id,product_type):
         return False
     return True
 
+
 # 找到离worker_id最近的类型为target_type的工作台
-def findNearestWokerForType(worker_id,target_type):
+def findNearestWokerForType(worker_id, target_type):
     min_distance = 1000
     index = -1
     for i in range(worker_num):
@@ -1910,15 +1819,17 @@ def findNearestWokerForType(worker_id,target_type):
             index = i
     return index
 
+
 def printNode(node):
     for i in range(node.son_num):
         # print('%d号工作台的子节点为%d' %(node.id,node.sons[i].id), file=F)
         printNode(node.sons[i])
 
+
 # 更新更合适的交付点
 def updateExecutingTask(robot_id):
     sell_id = robot_task[robot_id][2]
-    sell_type = worker_infos[sell_id][0] #当前在正执行任务的卖点
+    sell_type = worker_infos[sell_id][0]  # 当前在正执行任务的卖点
     buy_id = robot_task[robot_id][1]
     buy_type = worker_infos[buy_id][0]  # 当前在正执行任务的买点
     # 7类工作台的交付由外部控制，不随意更改
@@ -1941,9 +1852,11 @@ def updateExecutingTask(robot_id):
             for p in range(len(custom_task_list[n])):
                 if custom_task_list[n][p][2] == temp_sell_id:
                     holder_num = holder_num + 1
-        distance_c2center = calDistance(center[0], center[1], worker_infos[temp_sell_id][1], worker_infos[temp_sell_id][2])  # 计算可用卖点到中心点的距离
+        distance_c2center = calDistance(center[0], center[1], worker_infos[temp_sell_id][1],
+                                        worker_infos[temp_sell_id][2])  # 计算可用卖点到中心点的距离
         # 计算中心点权值
-        weight_p2c = distance_p2c * 1 + distance_c2center * 0.3 + (getNeedProductCount(temp_sell_type) - holder_num) * 10
+        weight_p2c = distance_p2c * 1 + distance_c2center * 0.3 + (
+                    getNeedProductCount(temp_sell_type) - holder_num) * 10
         # 出于均衡，对于最少的类型我们提升其权重
         if min_consumer_type == temp_sell_type:
             weight_p2c = weight_p2c * 0.5
@@ -1951,7 +1864,7 @@ def updateExecutingTask(robot_id):
             min_weight_p2c = weight_p2c
             new_sell_id = temp_sell_id
         # 最后1000帧开始判断任务是否可执行完，对于无法完成的任务不与更改
-        if time > 8000 and (not canFinish(robot_id,buy_id,sell_id)):
+        if time > 8000 and (not canFinish(robot_id, buy_id, sell_id)):
             return
         # 未找到合适的售卖工作台
         if new_sell_id == -1:
@@ -1965,12 +1878,12 @@ def updateExecutingTask(robot_id):
                 for p in range(len(custom_task_list[n])):
                     if custom_task_list[n][p][2] == sell_id:
                         holder_num = holder_num + 1
-            #更改任务交付目标
+            # 更改任务交付目标
             distance_c2center = calDistance(center[0], center[1], worker_infos[sell_id][1], worker_infos[sell_id][2])
             weight_p2c = distance_p2c * 1 + distance_c2center * 0.3 + (getNeedProductCount(sell_type) - holder_num) * 10
             if min_weight_p2c < weight_p2c:
                 robot_task[robot_id][2] = new_sell_id
-                removeConsumerFromConsumerList(new_sell_id,buy_type)
+                removeConsumerFromConsumerList(new_sell_id, buy_type)
                 consumer_list[buy_type].append(sell_id)
                 return
 
@@ -2004,20 +1917,21 @@ def updateExecutingTask(robot_id):
     #             consumer_list[buy_type-1].append(sell_id)
     #             return
 
+
 class Node:
 
-    def __init__(self, id, type,product_state):
-        self.id = id # 工作台id
-        self.type = type # 工作台类型
-        self.product_state = product_state # 是否完成生产
-        self.sons = [] # 所需材料对应的工作台节点
+    def __init__(self, id, type, product_state):
+        self.id = id  # 工作台id
+        self.type = type  # 工作台类型
+        self.product_state = product_state  # 是否完成生产
+        self.sons = []  # 所需材料对应的工作台节点
         self.son_num = 0
 
     def addSon(self, son):
         self.sons.append(son)
         self.son_num = self.son_num + 1
 
-    def updateProductState(self,product_state):
+    def updateProductState(self, product_state):
         self.product_state = product_state  # 是否完成生产
 
 
@@ -2030,22 +1944,16 @@ if __name__ == '__main__':
             if i.isdigit():
                 count += 1
         _in = input()
-    sys.stdout.write('OK\n')
-    sys.stdout.flush()
-
+    finish()
     # 图一
     if count == 43:
         run1()
-    # 图二
-    elif count == 25:
-        physics = Physics_2.Physics()
     # 图三
     elif count == 50:
         run3()
-    # 图四
-    elif count == 18:
-        physics = Physics_4.Physics()
 
+    physics2 = Physics2.Physics()
+    physics4 = Physics4.Physics()
     while True:
         line = sys.stdin.readline()
         if not line:
@@ -2054,8 +1962,6 @@ if __name__ == '__main__':
         # 读入帧数和金钱
         time = int(parts[0])
         money = int(parts[1])
-        # print('---------------------------------',file=F)
-        # print(time,file=F)
         # 读入工作台状态信息和机器人信息
         updateInfo()
         # 初始化
@@ -2064,34 +1970,30 @@ if __name__ == '__main__':
             flag = True
         read_util_ok()
         sys.stdout.write('%d\n' % time)
-        # if time>8000 and haveSeven:
-        #     root_node.id = -1
+        if time > 8000 and haveSeven and worker_num == 18:
+            root_node.id = -1
         # 更新机器人任务执行情况
         updateRobotTask()
-        # print('7号工作台还有%d帧完成生产' % (worker_infos[priority_list[0]][3]), file=F)
-        # print('机器人任务',file=F)
-        # print(robot_task,file=F)
-        # print('消费者队列任务', file=F)
-        # print(consumer_list, file=F)
-        # print('生产者队列任务', file=F)
-        # print(value_producer_list, file=F)
-        # print('专属队列任务', file=F)
-        # print(custom_task_list, file=F)
+
         # 分配任务
         assignTask()
 
-        # # 寻找是否有更适合的交付点
-        # for i in range(4):
-        #     updateExecutingTask(i)
-
         # 寻找可以顺路做的任务
-        for i in range(4):
-            # 优先抢断顺路的主线任务
-            if time > 0:
-                robExecutingTask(i)
-                generateTogetherTask2(i)
+        if worker_num == 25:
+            for i in range(4):
+                # 优先抢断顺路的主线任务
+                if time > 0:
+                    robExecutingTask(i)
+                    generateTogetherTask2(i)
+        elif worker_num == 18:
+            for i in range(4):
+                # 优先抢断顺路的主线任务
+                if time < 8000:
+                    robExecutingTask(i)
+                    generateTogetherTask2(i)
 
         # 执行任务
         exec()
 
         finish()
+

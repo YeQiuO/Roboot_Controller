@@ -23,10 +23,10 @@ def finish():
 
 
 def log_print(log):
-    # return
-    mylog = open('recode.log', mode='a', encoding='utf-8')
-    print(log, file=mylog)
-    mylog.close()
+    return
+    # mylog = open('recode.log', mode='a', encoding='utf-8')
+    # print(log, file=mylog)
+    # mylog.close()
 
 
 def calDistance(x1, y1, x2, y2):
