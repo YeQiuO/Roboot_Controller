@@ -1,7 +1,6 @@
 import numpy as np
-
-import Data
-from Task import Task
+from map1 import Data
+from map1.Task import Task
 
 
 class Schedule:

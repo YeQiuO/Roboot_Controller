@@ -17,8 +17,7 @@ class Tree:
         self.sons = sons
 
     # pattern 1：Key Node 9
-    def update_1(self, super_sons, sons, grand_sons):
-        self.super_sons = super_sons
+    def update_1(self, sons, grand_sons):
         self.sons = sons
         self.grand_son = grand_sons
 
