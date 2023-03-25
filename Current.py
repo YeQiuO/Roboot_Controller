@@ -13,6 +13,5 @@ class Current:
 if __name__ == '__main__':
     # temp = [1, 2, 3, 4, 5, 6]
     temp = [[1, 2], [3, 4], [5, 6]]
-    temp.remove([1, 2])
-    print(temp)
+    print(temp[1:])
 

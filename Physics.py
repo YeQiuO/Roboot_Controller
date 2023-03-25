@@ -94,7 +94,8 @@ class Physics:
         duration = current_speed / 6 * 30
         a = current_speed / 6 * 2
         par_1 = 0.9
-        par_2 = 3/2
+        par_2 = 0.91 if len(node_ids)==43 else 1
+        par_3 = 4
         if robot_x < a and abs(CalculateAngle(robot_direction, -1, 0)) <= temp_angle:
             self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
             return
@@ -123,6 +124,19 @@ class Physics:
             angle_speed = math.pi if robot_direction > 1/4*math.pi or robot_angle_speed > 0 else -math.pi
             self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
             return
+        # 防止边缘碰撞
+        elif robot_y < par_3 and robot_x < par_3 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 1):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
+        elif robot_y < par_3 and robot_x > 50 - par_3 and abs(CalculateAngle(robot_direction, 1, -1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 2):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
+        elif robot_y > 50 - par_3 and robot_x < par_3 and abs(CalculateAngle(robot_direction, -1, 1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 3):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
+        elif robot_y > 50 - par_3 and robot_x > 50 - par_3 and abs(CalculateAngle(robot_direction, 1, 1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 4):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
         # 左下
         # elif robot_y < a*par_1 and robot_x < a*par_1 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle*2:
         #     angle_speed = math.pi if robot_direction > -3/4*math.pi else -math.pi
@@ -150,8 +164,8 @@ class Physics:
         
 
         # 防止同时到达相同目标点
-        parameter_1 = current_speed / 6 + 2  # 前后保持的距离
-        # parameter_1 = current_speed / 6 * 1.2 + 2 if node_ids[target_id].type in [1, 2, 3] else current_speed / 6 * 1.2 + 1.1  # 前后保持的距离
+        # parameter_1 = current_speed / 6 + 2  # 前后保持的距离
+        parameter_1 = current_speed / 6 * 1.2 + 2 if node_ids[target_id].type in [1, 2, 3] else current_speed / 6 * 1.2 + 1.1  # 前后保持的距离
         remain_distance = current_works.remain_distance
         for i in range(4):
             if i != robot_id and current_works.list[i] is not None:
@@ -166,7 +180,7 @@ class Physics:
 
         # 防撞
         for robot in robots:
-            if robot.id == robot_id or line_speed == 0:
+            if robot.id == robot_id:
                 continue
 
             # 预测t秒后的世界线
@@ -253,7 +267,7 @@ class Physics:
                     if robot_angle_speed * angle_speed < -math.pi:
                         line_speed = 2
                     if robot.thing_type != 0 or robots[robot_id].thing_type != 0:
-                        duration = 3
+                        duration = 2
                     # 边缘碰撞
                     # par_3 = 3
                     # par_4 = 1/2*math.pi
@@ -362,8 +376,19 @@ class Physics:
                 self.robots_toward_to_line[robot.id][i] = CalculateAngle(robot.towards, robots[i].x - robot.x,
                                                                          robots[i].y - robot.y)
 
-    def will_crush(self, robot_id):
-        pass
+    def will_crush(self, robot_id, robots, type):
+        for robot in robots:
+            if robot.id == robot_id:
+                continue
+            if type==1 and robot.x < robots[robot_id].x and robot.y < robots[robot_id].y:
+                return True
+            elif type==2 and robot.x > robots[robot_id].x and robot.y < robots[robot_id].y:
+                return True
+            elif type==3 and robot.x < robots[robot_id].x and robot.y > robots[robot_id].y:
+                return True
+            elif type==4 and robot.x > robots[robot_id].x and robot.y > robots[robot_id].y:
+                return True
+        return False
 
 
 # 计算 direction方向 和 (target_x,target_y)方向 的夹角，以 direction方向 为起始方向，正逆负顺
