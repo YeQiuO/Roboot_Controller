@@ -13,6 +13,12 @@ class Current:
 if __name__ == '__main__':
     # temp = [1, 2, 3, 4, 5, 6]
     temp = [[1, 2], [3, 4], [5, 6]]
-    temp.remove([1, 2])
-    print(temp)
-
+    # print(temp[1:])
+    a = input()
+    temp = a.split()
+    count = 0
+    for i in temp:
+        if i.isdigit():
+            count += 1
+    print(type(a))
+    print(a.isdigit())

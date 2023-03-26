@@ -88,43 +88,73 @@ class Physics:
             line_speed = 6
 
         # 防撞墙
-        # if robots[robot_id].thing_type != 0:
         temp_angle = 1 / 6 * math.pi
         angle_direction = abs(robot_direction) / robot_direction if robot_direction != 0 else 1
-        duration = current_speed / 6 * 30
-        a = current_speed / 6 * 2
-        par_1 = 0.9
-        par_2 = 3/2
-        if robot_x < a and abs(CalculateAngle(robot_direction, -1, 0)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+
+        # 防止角落碰撞
+        distance_1 = current_speed/6 * 1.2 + 0.5
+        duration_1 = current_speed/6 * 10 + 15
+        # 防止墙壁碰撞
+        distance_2 = current_speed/6 * 1.2 + 0.5
+        duration_2 = current_speed/6 * 10 + 10
+        # 防止多球在四个角落的碰撞
+        distance_3 = 6
+
+        # 防止角落碰撞
+        if robot_y < distance_1 and robot_x < distance_1 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle:
+            angle_speed = math.pi if robot_direction > -3/4*math.pi else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_1)
             return
-        elif robot_x > 50 - a and abs(CalculateAngle(robot_direction, 1, 0)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+        elif robot_y < distance_1 and robot_x > 50 - distance_1 and abs(CalculateAngle(robot_direction, 1, -1)) <= temp_angle:
+            angle_speed = math.pi if robot_direction > -1/4*math.pi else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_1)
             return
-        elif robot_y < a and abs(CalculateAngle(robot_direction, 0, -1)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+        elif robot_y > 50 - distance_1 and robot_x < distance_1 and abs(CalculateAngle(robot_direction, -1, 1)) <= temp_angle:
+            angle_speed = math.pi if robot_direction > 3/4*math.pi else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_1)
             return
-        elif robot_y > 50 - a and abs(CalculateAngle(robot_direction, 0, 1)) <= temp_angle:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration)
+        elif robot_y > 50 - distance_1 and robot_x > 50 - distance_1 and abs(CalculateAngle(robot_direction, 1, 1)) <= temp_angle:
+            angle_speed = math.pi if robot_direction > 1/4*math.pi else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_1)
             return
-        elif robot_y < a*par_1 and robot_x < a*par_1 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle*2:
-            angle_speed = math.pi if robot_direction > -3/2*math.pi or robot_angle_speed > 0 else -math.pi
-            self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
+        # 防止墙壁碰撞
+        elif robot_x < distance_2 and abs(CalculateAngle(robot_direction, -1, 0)) <= temp_angle:
+            angle_speed = math.pi if robot_direction > 0 else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_2)
             return
-        elif robot_y < a*par_1 and robot_x > 50 - a*par_1 and abs(CalculateAngle(robot_direction, 1, -1)) <= temp_angle*2:
-            angle_speed = math.pi if robot_direction > -1/2*math.pi or robot_angle_speed > 0 else -math.pi
-            self.set_sustain(robot_id, 0, angle_speed, duration*par_2)
+        elif robot_x > 50 - distance_2 and abs(CalculateAngle(robot_direction, 1, 0)) <= temp_angle:
+            angle_speed = math.pi if robot_direction > 0 else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_2)
             return
-        elif robot_y > 50 - a*par_1 and robot_x < a*par_1 and abs(CalculateAngle(robot_direction, -1, 1)) <= temp_angle*2:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*par_2)
+        elif robot_y < distance_2 and abs(CalculateAngle(robot_direction, 0, -1)) <= temp_angle:
+            angle_speed = math.pi if standardization(robot_direction+1/2*math.pi) > 0 else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_2)
             return
-        elif robot_y > 50 - a*par_1 and robot_x > 50 - a*par_1 and abs(CalculateAngle(robot_direction, 1, 1)) <= temp_angle*2:
-            self.set_sustain(robot_id, 0, angle_direction * math.pi, duration*par_2)
+        elif robot_y > 50 - distance_2 and abs(CalculateAngle(robot_direction, 0, 1)) <= temp_angle:
+            angle_speed = math.pi if standardization(robot_direction-1/2*math.pi) > 0 else -math.pi
+            self.set_sustain(robot_id, 0, angle_speed, duration_2)
+            return
+        # 防止多球在四个角落的碰撞
+        elif robot_y < distance_3 and robot_x < distance_3 and abs(CalculateAngle(robot_direction, -1, -1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 1):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
+        elif robot_y < distance_3 and robot_x > 50 - distance_3 and abs(CalculateAngle(robot_direction, 1, -1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 2):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
+        elif robot_y > 50 - distance_3 and robot_x < distance_3 and abs(CalculateAngle(robot_direction, -1, 1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 3):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
+        elif robot_y > 50 - distance_3 and robot_x > 50 - distance_3 and abs(CalculateAngle(robot_direction, 1, 1)) <= temp_angle*2 and self.will_crush(robot_id, robots, 4):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
+            return
+        elif robot_y > 46 and abs(CalculateAngle(robot_direction, 0, 1)) <= temp_angle and self.will_crush(robot_id, robots, 5):
+            self.set_sustain(robot_id, 0, angle_speed, 5)
             return
 
+
         # 防止同时到达相同目标点
-        parameter_1 = current_speed / 6 + 2  # 前后保持的距离
-        # parameter_1 = current_speed / 6 * 1.2 + 2 if node_ids[target_id].type in [1, 2, 3] else current_speed / 6 * 1.2 + 1.1  # 前后保持的距离
+        parameter_1 = current_speed/6 * 1.2 + 1.2  # 前后保持的距离
+        # parameter_1 = 4 if node_ids[target_id].type in [1] else current_speed / 6 * 1.2 + 1.8 # 前后保持的距离
         remain_distance = current_works.remain_distance
         for i in range(4):
             if i != robot_id and current_works.list[i] is not None:
@@ -139,7 +169,7 @@ class Physics:
 
         # 防撞
         for robot in robots:
-            if robot.id == robot_id or line_speed == 0:
+            if robot.id == robot_id:
                 continue
 
             # 预测t秒后的世界线
@@ -159,10 +189,8 @@ class Physics:
             # 发生碰撞
             critical_angle = math.pi / 4
             if is_crush:
-                # if self.sustain[robot.id] != 0:
-                #     continue
 
-                duration = -1
+                duration_2 = -1
                 toward_to_line = self.robots_toward_to_line[robot_id][robot.id]
                 another_toward_to_line = self.robots_toward_to_line[robot.id][robot_id]
 
@@ -175,27 +203,17 @@ class Physics:
                             angle_speed = clockwise_turn(angle_speed)
                         else:
                             angle_speed = counterclockwise_turn(angle_speed)
-                        duration = 8
+                        duration_2 = 8
                     # 侧面偷袭
                     elif abs(toward_to_line) < math.pi / 7 and abs(toward_to_line) < abs(another_toward_to_line):
                         temp = -1 * abs(another_toward_to_line) / another_toward_to_line
                         angle_speed = temp * math.pi
                         line_speed -= 1 if line_speed > 1 else 0
-                        duration = 8
+                        duration_2 = 8
                     elif abs(another_toward_to_line) < math.pi / 7 and abs(another_toward_to_line) < abs(toward_to_line):
                         temp = -1 * abs(toward_to_line) / toward_to_line
                         angle_speed = temp * abs(another_toward_to_line)
-                        duration = (math.pi - abs(another_toward_to_line))/math.pi*5
-                    # elif abs(toward_to_line) < math.pi / 7 and math.pi / 2.2 < abs(another_toward_to_line):
-                    #     temp = -1 * abs(another_toward_to_line) / another_toward_to_line
-                    #     angle_speed = temp * math.pi
-                    #     line_speed -= 1 if line_speed > 1 else 0
-                    #     duration = 8
-                    # elif abs(another_toward_to_line) < math.pi / 7 and math.pi / 2.2 < abs(toward_to_line):
-                    #     temp = -1 * abs(another_toward_to_line) / another_toward_to_line
-                    #     angle_speed = temp * 1/3 * math.pi
-                    #     line_speed += 4 if line_speed < 4 else 6
-                    #     duration = 5
+                        duration_2 = (math.pi - abs(another_toward_to_line))/math.pi*5
                     # 同侧撞
                     else:
                         k = (robot.y - robot_y) / (robot.x - robot_x)
@@ -203,7 +221,7 @@ class Physics:
                             angle_speed = counterclockwise_turn(angle_speed)
                         else:
                             angle_speed = clockwise_turn(angle_speed)
-                        duration = 8 + (math.pi - abs(robot_direction - robot.towards)) / (3 / 2 * math.pi) * 15
+                        duration_2 = 8 + (math.pi - abs(robot_direction - robot.towards)) / (3 / 2 * math.pi) * 15
                 # 小角撞
                 else:
                     robot_speed = (robot.line_speed_x ** 2 + robot.line_speed_y ** 2) ** 0.5
@@ -211,14 +229,14 @@ class Physics:
                     if abs(current_speed - robot_speed) > 2 and current_speed > robot_speed:
                         sign = -1 * toward_to_line / abs(toward_to_line)
                         angle_speed = sign * math.pi
-                        duration = 10
+                        duration_2 = 10
                     # 侧撞
                     else:
                         if abs(toward_to_line) < abs(self.robots_toward_to_line[robot.id][robot_id]):
                             line_speed = 0
-                            duration = 15
+                            duration_2 = 15
 
-                if duration > 0:
+                if duration_2 > 0:
                     if line_speed < 4:
                         line_speed = 4
                     if robot.thing_type == 7:
@@ -226,85 +244,20 @@ class Physics:
                     if robot_angle_speed * angle_speed < -math.pi:
                         line_speed = 2
                     if robot.thing_type != 0 or robots[robot_id].thing_type != 0:
-                        duration = 3
+                        duration_2 = 3
+                    # 边缘碰撞
+                    # distance_3 = 3
+                    # par_4 = 1/2*math.pi
+                    # if (robot.x < distance_3 or robot.y < distance_3 or robot.x > 50-distance_3 or robot.y > 50-distance_3) \
+                    #         and (abs(CalculateAngle(robot_direction, -1, 1))>par_4 or abs(CalculateAngle(robot_direction, -1, 1))>par_4 or
+                    #          abs(CalculateAngle(robot_direction, -1, 1))>par_4 or abs(CalculateAngle(robot_direction, -1, 1))>par_4):
+                    #     angle_speed *= 1/2
+                    #     line_speed = 0
+                        # duration_2 *= 2
 
-                    self.set_sustain(robot_id, line_speed, angle_speed, duration)
+                    self.set_sustain(robot_id, line_speed, angle_speed, duration_2)
                     Data.log_print("检测到碰撞" + str(robot_id) + ',' + str(robot.id) + ',' + str(line_speed) + ',' + str(
-                        angle_speed) + ',' + str(duration))
-
-                # V3.0
-                # 侧面直接撞
-                # if abs(toward_to_line) < math.pi / 20:
-                #     # 与大角相反方向
-                #     temp = -1 * abs(self.robots_toward_to_line[robot.id][robot_id]) / self.robots_toward_to_line[robot.id][robot_id]
-                #     angle_speed = temp * math.pi
-                #     duration = 8
-                # # 异侧撞
-                # elif toward_to_line * self.robots_toward_to_line[robot.id][robot_id] > 0:
-                #     # 反向让路
-                #     if abs(toward_to_line) < abs(self.robots_toward_to_line[robot.id][robot_id]):
-                #         if toward_to_line > 0:
-                #             angle_speed = clockwise_turn(angle_speed)
-                #         else:
-                #             angle_speed = counterclockwise_turn(angle_speed)
-                #     duration = 8
-                # # 同侧撞
-                # else:
-                #     # toward_to_line 小的让路
-                #     if abs(toward_to_line) < abs(self.robots_toward_to_line[robot.id][robot_id]):
-                #         if toward_to_line > 0:
-                #             angle_speed = counterclockwise_turn(angle_speed)
-                #         else:
-                #             angle_speed = clockwise_turn(angle_speed)
-                #     duration = 20
-
-                # 持续时间
-                # duration = 2 + 6 * abs(robot_angle_speed - angle_speed)/math.pi
-
-                # V2.0
-                # 侧撞，左侧robot逆时针
-                # if 2/3 * math.pi > toward_to_line >= critical_angle:
-                #     angle_speed = counterclockwise_turn(angle_speed)
-                # # 侧撞，右侧robot顺时针
-                # elif -critical_angle > toward_to_line >= 2/3 * -math.pi:
-                #     angle_speed = clockwise_turn(angle_speed)
-                # # 面对面撞，右上侧robot在右侧，同时逆时针
-                # elif critical_angle > toward_to_line >= 0:
-                #     angle_speed = counterclockwise_turn(angle_speed)
-                # # 面对面撞，右上侧robot在左侧，同时顺时针
-                # elif 0 > toward_to_line >= -critical_angle:
-                #     angle_speed = clockwise_turn(angle_speed)
-
-                # V1.0
-                # if abs(robot_direction - robot.towards) > math.pi/3:
-                # if robot_x != robot.x and (robot_y - robot.y) / (robot_x - robot.x) < 0:
-                #     # 侧撞，左侧robot逆时针
-                #     if math.pi / 2 > toward_to_line >= critical_angle:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 侧撞，右侧robot顺时针
-                #     elif -critical_angle > toward_to_line >= -math.pi / 2:
-                #         angle_speed = clockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在右侧，同时逆时针
-                #     elif critical_angle > toward_to_line >= 0:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在左侧，同时顺时针
-                #     elif 0 > toward_to_line >= -critical_angle:
-                #         angle_speed = clockwise_turn(angle_speed)
-                # else:
-                #     # 侧撞，左侧robot逆时针
-                #     if math.pi/2 > toward_to_line >= math.pi/6:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 侧撞，右侧robot顺时针
-                #     elif -math.pi/6 > toward_to_line >= -math.pi/2:
-                #         angle_speed = clockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在右侧，同时逆时针
-                #     elif math.pi/6 > toward_to_line >= 0:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在左侧，同时顺时针
-                #     elif 0 > toward_to_line >= -math.pi/6:
-                #         angle_speed = clockwise_turn(angle_speed)
-
-                # line_speed = line_speed - 1 if line_speed < 1 else 1
+                        angle_speed) + ',' + str(duration_2))
 
         Data.log_print("angle_speed" + str(robot_id) + '==' + str(angle_speed))
         Data.log_print("line_speed" + str(robot_id) + '==' + str(line_speed))
@@ -325,6 +278,22 @@ class Physics:
 
                 self.robots_toward_to_line[robot.id][i] = CalculateAngle(robot.towards, robots[i].x - robot.x,
                                                                          robots[i].y - robot.y)
+
+    def will_crush(self, robot_id, robots, type):
+        for robot in robots:
+            if robot.id == robot_id:
+                continue
+            if type==1 and robot.x < robots[robot_id].x and robot.y < robots[robot_id].y:
+                return True
+            elif type==2 and robot.x > robots[robot_id].x and robot.y < robots[robot_id].y:
+                return True
+            elif type==3 and robot.x < robots[robot_id].x and robot.y > robots[robot_id].y:
+                return True
+            elif type==4 and robot.x > robots[robot_id].x and robot.y > robots[robot_id].y:
+                return True
+            elif type==5 and robot.y > robots[robot_id].y:
+                return True
+        return False
 
 
 # 计算 direction方向 和 (target_x,target_y)方向 的夹角，以 direction方向 为起始方向，正逆负顺
@@ -349,3 +318,11 @@ def counterclockwise_turn(angle_speed):
     # return angle_speed
     # return 1/3 * angle_speed - 2/3 * math.pi
     return math.pi
+
+
+def standardization(angle):
+    if angle > math.pi:
+        angle -= 2 * math.pi
+    if angle < -math.pi:
+        angle += 2 * math.pi
+    return angle
