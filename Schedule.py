@@ -155,7 +155,9 @@ def canFinish(task, robot_x, robot_y, frame):
     distance = distance_b2s + distance_r2b
     leave_time = (9000 - frame) / 50  # 计算剩余时间(秒)
     redundance = 2  # 冗余时间,增加容错
-    avg_time = 4.5 if distance < 15 else 5  # 平均行驶速度
+    avg_time = 6  # 平均行驶速度
+    if task.start.type in [4, 5, 6]:
+        return True
     if (distance / avg_time + redundance) < leave_time:
         return True
     else:
