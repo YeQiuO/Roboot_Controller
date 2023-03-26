@@ -518,6 +518,10 @@ class Data:
 
             temp = []
             for j in sons_temp:
+
+                # if j.type == 4 and j.x < 9:
+                #     continue
+
                 temp.append([self.node_distance[key_node.id][j.id], j])
             temp = sorted(temp, key=lambda x: x[0])
             # length = int(len(temp) / 2) + 1 if int(len(temp) / 2) + 1 >= Data.count_456 else len(temp)
@@ -531,13 +535,18 @@ class Data:
                 for j in self.node_type[i]:
                     if self.node_distance[key_node.id][j.id] < Data.distance_123:
                         sons.append(j)
-            # 选择距离类似的5个节点作为grand_son
+            # 选择距离类似的5个节点作为grand_son, self.node_ids[34] 13
             grand_sons = []
+            # grand_sons = [self.node_ids[34]]
             # length_2 = Data.count_456*2 if len(temp) > Data.count_456*2 else len(temp)
             # for i in temp[length:length_2]:
             #     grand_sons.append(i[1])
             # 在其余节点中选择距离原材料近的作为grand_son
             for node in sons_temp:
+
+                # if node.type == 4 and node.x < 9:
+                #     continue
+
                 if node not in sons and node not in grand_sons:
                     quits = False
                     for material_type in Data.corresponding_material[node.type]:
@@ -554,7 +563,6 @@ class Data:
 
             self.schedule.size_3 = 16
             self.schedule.weight_3 = 2
-            # self.schedule.weight_2 = 1
 
         return tree
 

@@ -72,6 +72,7 @@ class Physics:
         if self.is_close[robot_id] == 1 and old_target_robot != self.target[robot_id]:
             self.is_close[robot_id] = -1
         # 速度定义
+        par_9 = 1
         angle_towards_destination = abs(angle) * 180 / math.pi
 
         if angle_towards_destination < 40 and self.being_spin[robot_id] == 1:
@@ -79,6 +80,18 @@ class Physics:
         if self.is_close[robot_id] == 1 and (angle_towards_destination > 80 or self.being_spin[robot_id] == 1):  # 开始绕圈
             line_speed = 1
             self.being_spin[robot_id] = 1
+        elif robot_x < par_9 or robot_y < par_9 or robot_x > 50 - par_9 or robot_y > 50 - par_9 and angle_towards_destination > 30:
+            line_speed = 1
+
+            if distance < 1.2:
+                line_speed = 1.5 + distance/1.2 * 2.5
+            elif angle_towards_destination > 90:
+                line_speed = 1
+            # else:
+            #     line_speed = - (6 / 90) * angle_towards_destination + 6
+
+        # elif target_id == 24 and distance < 1.2:
+        #         line_speed = 1.5 + distance/1.2 * 0.5
         elif self.is_close[robot_id] == 1:  # 接近目的地
             line_speed = - (distance / 2 - 1) ** 2 + 6
             # line_speed = math.sqrt(distance * 2) + 4
@@ -227,16 +240,6 @@ class Physics:
                         temp = -1 * abs(toward_to_line) / toward_to_line
                         angle_speed = temp * abs(another_toward_to_line)
                         duration = (math.pi - abs(another_toward_to_line))/math.pi*5
-                    # elif abs(toward_to_line) < math.pi / 7 and math.pi / 2.2 < abs(another_toward_to_line):
-                    #     temp = -1 * abs(another_toward_to_line) / another_toward_to_line
-                    #     angle_speed = temp * math.pi
-                    #     line_speed -= 1 if line_speed > 1 else 0
-                    #     duration = 8
-                    # elif abs(another_toward_to_line) < math.pi / 7 and math.pi / 2.2 < abs(toward_to_line):
-                    #     temp = -1 * abs(another_toward_to_line) / another_toward_to_line
-                    #     angle_speed = temp * 1/3 * math.pi
-                    #     line_speed += 4 if line_speed < 4 else 6
-                    #     duration = 5
                     # 同侧撞
                     else:
                         k = (robot.y - robot_y) / (robot.x - robot_x)
@@ -245,6 +248,7 @@ class Physics:
                         else:
                             angle_speed = clockwise_turn(angle_speed)
                         duration = 8 + (math.pi - abs(robot_direction - robot.towards)) / (3 / 2 * math.pi) * 15
+                        # line_speed = 3
                 # 小角撞
                 else:
                     robot_speed = (robot.line_speed_x ** 2 + robot.line_speed_y ** 2) ** 0.5
@@ -268,93 +272,10 @@ class Physics:
                         line_speed = 2
                     if robot.thing_type != 0 or robots[robot_id].thing_type != 0:
                         duration = 3
-                    # 边缘碰撞
-                    # par_3 = 3
-                    # par_4 = 1/2*math.pi
-                    # if (robot.x < par_3 or robot.y < par_3 or robot.x > 50-par_3 or robot.y > 50-par_3) \
-                    #         and (abs(CalculateAngle(robot_direction, -1, 1))>par_4 or abs(CalculateAngle(robot_direction, -1, 1))>par_4 or
-                    #          abs(CalculateAngle(robot_direction, -1, 1))>par_4 or abs(CalculateAngle(robot_direction, -1, 1))>par_4):
-                    #     angle_speed *= 1/2
-                    #     line_speed = 0
-                        # duration *= 2
 
                     self.set_sustain(robot_id, line_speed, angle_speed, duration)
                     Data.log_print("检测到碰撞" + str(robot_id) + ',' + str(robot.id) + ',' + str(line_speed) + ',' + str(
                         angle_speed) + ',' + str(duration))
-
-                # V3.0
-                # 侧面直接撞
-                # if abs(toward_to_line) < math.pi / 20:
-                #     # 与大角相反方向
-                #     temp = -1 * abs(self.robots_toward_to_line[robot.id][robot_id]) / self.robots_toward_to_line[robot.id][robot_id]
-                #     angle_speed = temp * math.pi
-                #     duration = 8
-                # # 异侧撞
-                # elif toward_to_line * self.robots_toward_to_line[robot.id][robot_id] > 0:
-                #     # 反向让路
-                #     if abs(toward_to_line) < abs(self.robots_toward_to_line[robot.id][robot_id]):
-                #         if toward_to_line > 0:
-                #             angle_speed = clockwise_turn(angle_speed)
-                #         else:
-                #             angle_speed = counterclockwise_turn(angle_speed)
-                #     duration = 8
-                # # 同侧撞
-                # else:
-                #     # toward_to_line 小的让路
-                #     if abs(toward_to_line) < abs(self.robots_toward_to_line[robot.id][robot_id]):
-                #         if toward_to_line > 0:
-                #             angle_speed = counterclockwise_turn(angle_speed)
-                #         else:
-                #             angle_speed = clockwise_turn(angle_speed)
-                #     duration = 20
-
-                # 持续时间
-                # duration = 2 + 6 * abs(robot_angle_speed - angle_speed)/math.pi
-
-                # V2.0
-                # 侧撞，左侧robot逆时针
-                # if 2/3 * math.pi > toward_to_line >= critical_angle:
-                #     angle_speed = counterclockwise_turn(angle_speed)
-                # # 侧撞，右侧robot顺时针
-                # elif -critical_angle > toward_to_line >= 2/3 * -math.pi:
-                #     angle_speed = clockwise_turn(angle_speed)
-                # # 面对面撞，右上侧robot在右侧，同时逆时针
-                # elif critical_angle > toward_to_line >= 0:
-                #     angle_speed = counterclockwise_turn(angle_speed)
-                # # 面对面撞，右上侧robot在左侧，同时顺时针
-                # elif 0 > toward_to_line >= -critical_angle:
-                #     angle_speed = clockwise_turn(angle_speed)
-
-                # V1.0
-                # if abs(robot_direction - robot.towards) > math.pi/3:
-                # if robot_x != robot.x and (robot_y - robot.y) / (robot_x - robot.x) < 0:
-                #     # 侧撞，左侧robot逆时针
-                #     if math.pi / 2 > toward_to_line >= critical_angle:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 侧撞，右侧robot顺时针
-                #     elif -critical_angle > toward_to_line >= -math.pi / 2:
-                #         angle_speed = clockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在右侧，同时逆时针
-                #     elif critical_angle > toward_to_line >= 0:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在左侧，同时顺时针
-                #     elif 0 > toward_to_line >= -critical_angle:
-                #         angle_speed = clockwise_turn(angle_speed)
-                # else:
-                #     # 侧撞，左侧robot逆时针
-                #     if math.pi/2 > toward_to_line >= math.pi/6:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 侧撞，右侧robot顺时针
-                #     elif -math.pi/6 > toward_to_line >= -math.pi/2:
-                #         angle_speed = clockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在右侧，同时逆时针
-                #     elif math.pi/6 > toward_to_line >= 0:
-                #         angle_speed = counterclockwise_turn(angle_speed)
-                #     # 面对面撞，右上侧robot在左侧，同时顺时针
-                #     elif 0 > toward_to_line >= -math.pi/6:
-                #         angle_speed = clockwise_turn(angle_speed)
-
-                # line_speed = line_speed - 1 if line_speed < 1 else 1
 
         Data.log_print("angle_speed" + str(robot_id) + '==' + str(angle_speed))
         Data.log_print("line_speed" + str(robot_id) + '==' + str(line_speed))
