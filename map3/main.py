@@ -1,6 +1,7 @@
 import sys
 
 from map3 import Data, Physics
+from map3.Task import Task
 
 
 def run3():
@@ -36,6 +37,12 @@ def run3():
                                    _data.robot[i].angle_speed, _data.robot[i].line_speed_x, _data.robot[i].line_speed_y,
                                    -1, _data.robot[i].x, _data.robot[i].y, -1,
                                    _data.current_works, _data.robot, _data.node_ids)
+
+        if 2908 < _data.frame < 2930:
+            sys.stdout.write('forward %d %d\n' % (3, 6))
+            sys.stdout.write('rotate %d %f\n' % (3, 0))
+        elif _data.frame == 8598:
+            _data.current_works.list[0] = Task(_data.node_ids[42], _data.node_ids[41])
 
         # 结束
         Data.finish()
