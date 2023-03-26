@@ -68,14 +68,25 @@ class Physics:
             self.is_close[robot_id] = 1
         if self.is_close[robot_id] == 1 and old_target_robot != self.target[robot_id]:
             self.is_close[robot_id] = -1
-        # 速度定义
-        angle_towards_destination = abs(angle) * 180 / math.pi
 
+        # 速度定义
+        par_9 = 5
+        angle_towards_destination = abs(angle) * 180 / math.pi
         if angle_towards_destination < 40 and self.being_spin[robot_id] == 1:
             self.being_spin[robot_id] = -1
+
         if self.is_close[robot_id] == 1 and (angle_towards_destination > 80 or self.being_spin[robot_id] == 1):  # 开始绕圈
             line_speed = 1
             self.being_spin[robot_id] = 1
+        elif robot_x < par_9 or robot_y < par_9 or robot_x > 50 - par_9 or robot_y > 50 - par_9:
+
+            if self.is_close[robot_id] == 1:
+                line_speed = 1.5 + distance/1.2 * 0.5
+            elif angle_towards_destination > 90:
+                line_speed = 0 if task_type == 1 else 1
+            else:
+                line_speed = - (6 / 90) * angle_towards_destination + 6
+
         elif self.is_close[robot_id] == 1:  # 接近目的地
             line_speed = - (distance / 2 - 1) ** 2 + 6
             # line_speed = math.sqrt(distance * 2) + 4
