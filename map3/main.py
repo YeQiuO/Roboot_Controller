@@ -43,6 +43,8 @@ def run3():
             sys.stdout.write('rotate %d %f\n' % (3, 0))
         elif _data.frame == 8598:
             _data.current_works.list[0] = Task(_data.node_ids[42], _data.node_ids[41])
+        elif _data.frame == 8619:
+            _data.current_works.list[3] = Task(_data.node_ids[12], _data.node_ids[24])
 
         # 结束
         Data.finish()

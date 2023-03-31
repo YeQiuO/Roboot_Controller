@@ -1503,10 +1503,31 @@ def exec():
                                robot_infos[i][10],
                                j, robot_infos[j][6], robot_infos[j][7], robot_infos[j][8], robot_infos[j][9],
                                robot_infos[j][10])
+                if time > 8728 and time < 8750:
+                    sys.stdout.write('forward %d %d\n' % (0, 4.0))
 
 
 # 为机器人分派任务并执行操作
 def assignTask():
+    if worker_num == 25:
+        if time == 8329:
+            robot_task[1][0] = 0
+            robot_task[1][1] = 17
+            robot_task[1][2] = 23
+            custom_task = [0, 23, 21]
+            custom_task_list[1].append(custom_task)
+        if time == 8482:
+            robot_task[2][2] = 3
+            robot_task[0][2] = 21
+        if time == 8634:
+            t2 = [0, 12, 3]
+            custom_task_list[0].append(t2)
+    if worker_num == 18:
+        if time == 8715:
+            robot_task[2][0] = 0
+            robot_task[2][1] = 11
+            robot_task[2][2] = 0
+
     for i in range(4):
         # 判断机器人当前是否正在执行任务
         if robot_task[i][0] == -1:
@@ -1525,7 +1546,7 @@ def assignTask():
                     if time < 8000:
                         task = generateTaskRealTime(i)
                     else:
-                        task = generateTaskRealTime2(i)
+                        task = generateTaskRealTime(i)
                 elif worker_num ==18:
                     task = generateTaskRealTime(i)
                 if task[0] == -1 or task[1] == -1:
@@ -2000,13 +2021,14 @@ if __name__ == '__main__':
             root_node.id = -1
         # 更新机器人任务执行情况
         updateRobotTask()
-
         # 分配任务
         assignTask()
 
         # 寻找可以顺路做的任务
         if worker_num == 25:
             for i in range(4):
+                if time > 8630 and i == 0:
+                    continue
                 # 优先抢断顺路的主线任务
                 if time > 0:
                     robExecutingTask(i)

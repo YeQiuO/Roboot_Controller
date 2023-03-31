@@ -202,10 +202,11 @@ class Data:
                     start = self.current_works.list[robot.id].start
                     end = self.current_works.list[robot.id].end
                     # 结束预约
-                    if end.type not in [8, 9]:
-                        self.schedule.already_schedule_end_node_ids[start.type].remove(end.id)
-                    if start.type in [4, 5, 6, 7]:
-                        self.schedule.already_schedule_start_node_ids.remove(start.id)
+                    if self.frame < 8597:
+                        if end.type not in [8, 9]:
+                            self.schedule.already_schedule_end_node_ids[start.type].remove(end.id)
+                        if start.type in [4, 5, 6, 7]:
+                            self.schedule.already_schedule_start_node_ids.remove(start.id)
 
                     log_print(str(robot.id) + '任务完成' + str(start.type))
                     self.current_works.wait += 1
